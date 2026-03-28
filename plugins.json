@@ -1,0 +1,91 @@
+{
+  "generated_at": "2026-03-28T23:34:50.330849+00:00",
+  "count": 3,
+  "plugins": [
+    {
+      "id": "graph",
+      "name": "Graph Tool",
+      "version": "0.1.0",
+      "description": "Generate chart-ready structures (line, bar, scatter, histogram).",
+      "author": "Akasha",
+      "category": "analytics",
+      "tags": [
+        "graph",
+        "chart",
+        "plot",
+        "analytics",
+        "timeseries"
+      ],
+      "icon": "line-chart",
+      "featured": true,
+      "permissions": [],
+      "entry_tools": [
+        "graph_plot",
+        "graph_stats"
+      ],
+      "ui_views": [
+        "graph",
+        "table",
+        "summary"
+      ],
+      "path": "plugins/graph"
+    },
+    {
+      "id": "maps",
+      "name": "Maps Tool",
+      "version": "0.1.0",
+      "description": "Compute routes and distances between two points, with map-ready output.",
+      "author": "Akasha",
+      "category": "navigation",
+      "tags": [
+        "maps",
+        "route",
+        "distance",
+        "geo",
+        "travel"
+      ],
+      "icon": "map",
+      "featured": true,
+      "permissions": [
+        "network"
+      ],
+      "entry_tools": [
+        "maps_distance",
+        "maps_route"
+      ],
+      "ui_views": [
+        "map",
+        "table",
+        "summary"
+      ],
+      "path": "plugins/maps"
+    },
+    {
+      "id": "simulation",
+      "name": "Simulation Tool",
+      "version": "0.1.0",
+      "description": "Run deterministic scenario simulations and return timeseries/results.",
+      "author": "Akasha",
+      "category": "modeling",
+      "tags": [
+        "simulation",
+        "scenario",
+        "timeseries",
+        "forecast"
+      ],
+      "icon": "activity",
+      "featured": false,
+      "permissions": [],
+      "entry_tools": [
+        "sim_run",
+        "sim_compare"
+      ],
+      "ui_views": [
+        "timeseries",
+        "table",
+        "summary"
+      ],
+      "path": "plugins/simulation"
+    }
+  ]
+}

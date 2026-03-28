@@ -1,0 +1,7 @@
+id = "simulation"
+name = "Simulation Tool"
+version = "0.1.0"
+kind = "tool"
+wasm_path = "plugin.wasm"
+description = "Scenario simulation engine with deterministic output"
+permissions = []

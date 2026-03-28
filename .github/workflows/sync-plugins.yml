@@ -1,0 +1,30 @@
+name: Build Plugins Catalog
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'plugins/**'
+      - 'scripts/build_plugins.py'
+  workflow_dispatch:
+
+jobs:
+  build-catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build plugins.json
+        run: python scripts/build_plugins.py
+
+      - name: Commit updated catalog
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'chore(catalog): rebuild plugins.json'
+          file_pattern: plugins.json

@@ -1,0 +1,14 @@
+{
+  "id": "simulation",
+  "name": "Simulation Tool",
+  "version": "0.1.0",
+  "description": "Run deterministic scenario simulations and return timeseries/results.",
+  "author": "Akasha",
+  "category": "modeling",
+  "tags": ["simulation", "scenario", "timeseries", "forecast"],
+  "icon": "activity",
+  "featured": false,
+  "permissions": [],
+  "entry_tools": ["sim_run", "sim_compare"],
+  "ui_views": ["timeseries", "table", "summary"]
+}

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Akasha Plugins</title>
+  <style>
+    body { font-family: Inter, Segoe UI, Arial, sans-serif; margin: 2rem; background: #0f1115; color: #f2f4f8; }
+    h1 { margin-bottom: .5rem; }
+    .muted { color: #97a3b6; }
+    .grid { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); margin-top: 1.5rem; }
+    .card { border: 1px solid #2a3242; border-radius: 12px; padding: 1rem; background: #151a23; }
+    .tags { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .75rem; }
+    .tag { font-size: .78rem; padding: .2rem .5rem; border-radius: 999px; background: #1f2a3d; color: #9ec1ff; }
+    code { background: #1d2431; padding: .1rem .35rem; border-radius: 6px; }
+  </style>
+</head>
+<body>
+  <h1>Akasha Plugins</h1>
+  <p class="muted">High-level tool plugins for Akasha agents (maps, graph, simulation, ...)</p>
+  <p id="meta" class="muted"></p>
+  <div id="grid" class="grid"></div>
+
+  <script>
+    fetch('./plugins.json')
+      .then(r => r.json())
+      .then(data => {
+        const meta = document.getElementById('meta');
+        const grid = document.getElementById('grid');
+        meta.textContent = `Catalog: ${data.count} plugin(s) · generated ${data.generated_at}`;
+
+        (data.plugins || []).forEach(p => {
+          const card = document.createElement('div');
+          card.className = 'card';
+          card.innerHTML = `
+            <h3>${p.name} <small class="muted">v${p.version}</small></h3>
+            <p>${p.description || ''}</p>
+            <p class="muted">id: <code>${p.id}</code></p>
+            <p class="muted">category: ${p.category || 'n/a'}</p>
+            <p class="muted">entry tools: ${(p.entry_tools || []).join(', ')}</p>
+            <div class="tags">${(p.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}</div>
+          `;
+          grid.appendChild(card);
+        });
+      })
+      .catch(err => {
+        document.getElementById('meta').textContent = `Failed to load plugins.json: ${err}`;
+      });
+  </script>
+</body>
+</html>

@@ -1,0 +1,1 @@
+C:\www\Akasha_plugins\plugins\maps\wasm\target\wasm32-unknown-unknown\release\akasha_maps_plugin.wasm: C:\www\Akasha_plugins\plugins\maps\wasm\src\lib.rs

@@ -1,0 +1,7 @@
+id = "graph"
+name = "Graph Tool"
+version = "0.1.0"
+kind = "tool"
+wasm_path = "plugin.wasm"
+description = "Data graphing helper for line/bar/scatter outputs"
+permissions = []

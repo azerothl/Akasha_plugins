@@ -1,0 +1,14 @@
+{
+  "id": "graph",
+  "name": "Graph Tool",
+  "version": "0.1.0",
+  "description": "Generate chart-ready structures (line, bar, scatter, histogram).",
+  "author": "Akasha",
+  "category": "analytics",
+  "tags": ["graph", "chart", "plot", "analytics", "timeseries"],
+  "icon": "line-chart",
+  "featured": true,
+  "permissions": [],
+  "entry_tools": ["graph_plot", "graph_stats"],
+  "ui_views": ["graph", "table", "summary"]
+}
