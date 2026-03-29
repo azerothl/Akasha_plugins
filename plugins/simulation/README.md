@@ -6,16 +6,28 @@ High-level simulation plugin for Akasha.
 
 - `sim_run`
 - `sim_compare`
+- `plugin.simulation`
+- `plugin.call simulation ...`
+
+## Build `plugin.wasm`
+
+From repository root:
+
+- Windows PowerShell: `./scripts/build_simulation_plugin.ps1`
+- Bash: `./scripts/build_simulation_plugin.sh`
+
+This compiles `plugins/simulation/wasm` and copies `plugin.wasm` into `plugins/simulation/`.
 
 ## Input contract (example)
 
 ```json
 {
   "tool": "sim_run",
-  "model": "queue",
+  "model": "generic_growth",
   "params": {
-    "arrival_rate": 20,
-    "service_rate": 25,
+    "initial": 100,
+    "growth_rate": 0.02,
+    "noise": 0.03,
     "horizon": 120
   },
   "seed": 42
@@ -28,16 +40,30 @@ High-level simulation plugin for Akasha.
 {
   "ok": true,
   "view": "timeseries",
-  "summary": "Simulation finished",
+  "summary": "Simulation 'generic_growth' finished",
   "series": [
-    { "name": "queue_length", "points": [[0, 2], [1, 3], [2, 1]] }
+    { "name": "value", "points": [[0, 100], [1, 101.3], [2, 99.8]] }
   ],
   "metrics": {
-    "avg_queue": 2.1,
-    "p95_queue": 5
+    "avg": 102.4,
+    "p95": 115.2,
+    "final": 109.8
   }
 }
 ```
+
+## Compare mode (example)
+
+```json
+{
+  "tool": "sim_compare",
+  "model": "generic_growth",
+  "params": { "initial": 100, "growth_rate": 0.02, "noise": 0.03, "horizon": 60 },
+  "compare": { "growth_rate": 0.03 }
+}
+```
+
+Returns `view=table` with base/alternative metrics and a `delta` block.
 
 ## Tauri / TUI rendering
 

@@ -12,6 +12,12 @@ Each plugin folder must include:
 Current folders (`maps`, `graph`, `simulation`) already include manifests and contracts.
 You only need to produce `plugin.wasm` for each plugin implementation.
 
+Examples:
+
+- `./scripts/build_maps_plugin.ps1`
+- `./scripts/build_graph_plugin.ps1`
+- `./scripts/build_simulation_plugin.ps1`
+
 ## 2) Install into Akasha data dir
 
 Use CLI install command with a plugin folder path:
@@ -39,7 +45,7 @@ Check installed plugins:
 ## 5) Recommended rollout
 
 1. Implement + validate `maps` first
-2. Add `graph`
+2. Implement + validate `graph`
 3. Add `simulation`
 
 ## Important integration note

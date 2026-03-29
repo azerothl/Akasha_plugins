@@ -104,6 +104,30 @@ This regenerates `plugins.json` from all `plugins/*/plugin.json`.
 
 This generates `plugins/maps/plugin.wasm` from `plugins/maps/wasm`.
 
+## Build `graph` plugin
+
+```bash
+# PowerShell
+./scripts/build_graph_plugin.ps1
+
+# Bash
+./scripts/build_graph_plugin.sh
+```
+
+This generates `plugins/graph/plugin.wasm` from `plugins/graph/wasm`.
+
+## Build `simulation` plugin
+
+```bash
+# PowerShell
+./scripts/build_simulation_plugin.ps1
+
+# Bash
+./scripts/build_simulation_plugin.sh
+```
+
+This generates `plugins/simulation/plugin.wasm` from `plugins/simulation/wasm`.
+
 ---
 
 ## Test loop with Akasha app
@@ -119,8 +143,16 @@ Tool call conventions now supported by daemon plugin dispatch:
 
 - `TOOL: maps_distance <from_lat> <from_lon> <to_lat> <to_lon> [mode]`
 - `TOOL: maps_route <from_lat> <from_lon> <to_lat> <to_lon> [mode]`
+- `TOOL: graph_plot <chart> <y1> <y2> ...`
+- `TOOL: graph_stats <json-or-args...>`
 - `TOOL: plugin.maps <json-or-args...>`
 - `TOOL: plugin.call maps <json-or-args...>`
+- `TOOL: plugin.graph <json-or-args...>`
+- `TOOL: plugin.call graph <json-or-args...>`
+- `TOOL: sim_run <initial> <growth_rate> <noise> <horizon>`
+- `TOOL: sim_compare <initial> <growth_rate> <noise> <horizon>`
+- `TOOL: plugin.simulation <json-or-args...>`
+- `TOOL: plugin.call simulation <json-or-args...>`
 
 ---
 
