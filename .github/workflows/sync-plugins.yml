@@ -8,6 +8,9 @@ on:
       - 'scripts/build_plugins.py'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build-catalog:
     runs-on: ubuntu-latest
@@ -23,8 +26,19 @@ jobs:
       - name: Build plugins.json
         run: python scripts/build_plugins.py
 
+      - name: Check for changes
+        id: diff
+        run: |
+            git status --porcelain
+            if [ -z "$(git status --porcelain)" ]; then
+            echo "changed=false" >> $GITHUB_OUTPUT
+            else
+            echo "changed=true" >> $GITHUB_OUTPUT
+            fi
+
       - name: Commit updated catalog
+        if: steps.diff.outputs.changed == 'true'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          commit_message: 'chore(catalog): rebuild plugins.json'
-          file_pattern: plugins.json
+            commit_message: 'chore(catalog): rebuild plugins.json'
+            file_pattern: plugins.json
