@@ -5,10 +5,10 @@
   "description": "Compute routes and distances between two points, with map-ready output.",
   "author": "Akasha",
   "category": "navigation",
-  "tags": ["maps", "route", "distance", "geo", "travel"],
+  "tags": ["maps", "route", "distance", "geo", "travel", "geocode", "city"],
   "icon": "map",
   "featured": true,
   "permissions": ["network"],
-  "entry_tools": ["maps_distance", "maps_route"],
+  "entry_tools": ["maps_geocode", "maps_distance", "maps_route"],
   "ui_views": ["map", "table", "summary"]
 }

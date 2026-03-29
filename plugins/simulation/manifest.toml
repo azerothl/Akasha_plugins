@@ -5,3 +5,11 @@ kind = "tool"
 wasm_path = "plugin.wasm"
 description = "Scenario simulation engine with deterministic output"
 permissions = []
+
+[[routing_rules]]
+intent = "simulation"
+keywords = ["simulation", "simuler", "scenario", "projection", "forecast", "what-if"]
+preferred_tools = ["sim_run", "sim_compare"]
+forbidden_tools = ["write_file", "create_file", "memory_store"]
+priority = 70
+instruction = "When the user asks for scenario simulation/projection, prefer TOOL: sim_run (or TOOL: sim_compare for baseline vs alternative). Avoid unrelated tools and avoid file writes unless explicitly requested."

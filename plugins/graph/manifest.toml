@@ -5,3 +5,11 @@ kind = "tool"
 wasm_path = "plugin.wasm"
 description = "Data graphing helper for line/bar/scatter outputs"
 permissions = []
+
+[[routing_rules]]
+intent = "data_visualization"
+keywords = ["graph", "graphe", "courbe", "chart", "plot", "visualise", "visualize"]
+preferred_tools = ["graph_plot", "graph_stats"]
+forbidden_tools = ["write_file", "create_file", "memory_store"]
+priority = 70
+instruction = "When the user asks to visualize or chart data, prefer TOOL: graph_plot (and TOOL: graph_stats when summary is requested). Avoid unrelated tools and avoid file writes unless explicitly asked."

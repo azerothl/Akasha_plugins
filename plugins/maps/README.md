@@ -4,6 +4,7 @@ High-level map plugin for Akasha.
 
 ## Entry tools
 
+- `maps_geocode`
 - `maps_distance`
 - `maps_route`
 - `plugin.maps`
@@ -42,6 +43,44 @@ Or explicit JSON payload through `plugin.call`:
 }
 ```
 
+Geocoding only (city name to coordinates):
+
+```json
+{
+  "action": "geocode",
+  "query": "Meulan-en-Yvelines"
+}
+```
+
+City names are also supported directly:
+
+```json
+{
+  "action": "route",
+  "from_text": "Chateaubernard",
+  "to_text": "Meulan-en-Yvelines",
+  "mode": "car"
+}
+```
+
+Or CLI-style args:
+
+```json
+{
+  "tool": "maps_distance",
+  "args": ["Chateaubernard", "Meulan-en-Yvelines", "car"]
+}
+```
+
+Or geocode with tool name:
+
+```json
+{
+  "tool": "maps_geocode",
+  "args": ["Chateaubernard"]
+}
+```
+
 ## Output contract (example)
 
 ```json
@@ -52,6 +91,8 @@ Or explicit JSON payload through `plugin.call`:
   "distance_m": 420100.0,
   "duration_s": 10800.0,
   "mode": "car",
+  "resolved_from": "chateaubernard",
+  "resolved_to": "meulan-en-yvelines",
   "geometry": {
     "type": "LineString",
     "coordinates": [[0.328, 45.698], [2.547, 49.009]]
@@ -59,6 +100,20 @@ Or explicit JSON payload through `plugin.call`:
   "steps": [
     { "instruction": "Go to destination", "distance_m": 420100.0 }
   ]
+}
+```
+
+Geocode output example:
+
+```json
+{
+  "ok": true,
+  "view": "table",
+  "query": "Chateaubernard",
+  "resolved_name": "chateaubernard",
+  "lat": 45.6663,
+  "lon": -0.3341,
+  "confidence": 0.9
 }
 ```
 

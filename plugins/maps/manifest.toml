@@ -5,3 +5,19 @@ kind = "tool"
 wasm_path = "plugin.wasm"
 description = "Routes, distances and ETA between two points"
 permissions = ["network"]
+
+[[routing_rules]]
+intent = "geolocation_distance"
+keywords = ["distance", "itinéraire", "itineraire", "trajet", "route", "entre", "de", "vers"]
+preferred_tools = ["maps_geocode", "maps_distance", "maps_route"]
+forbidden_tools = ["memory_store", "write_file", "create_file", "security_audit"]
+priority = 100
+instruction = "For city-to-city distance/route requests, resolve names with TOOL: maps_geocode when needed, then use TOOL: maps_distance or TOOL: maps_route. If local resolution fails, use TOOL: web_search only to resolve locations, then call maps tools. Avoid unrelated tools and do not write files."
+
+[[routing_rules]]
+intent = "transport"
+keywords = ["itinéraire", "itineraire", "route", "trajet", "distance"]
+preferred_tools = ["maps_route"]
+forbidden_tools = ["memory_store", "write_file", "create_file"]
+priority = 90
+instruction = "For transport/travel routing questions, prefer TOOL: maps_route to provide concrete route + distance before broader commentary."
