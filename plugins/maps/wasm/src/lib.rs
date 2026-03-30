@@ -465,6 +465,10 @@ fn handle(input: &str) -> String {
             action = "route".to_string();
         }
     }
+    
+    // Debug: log input length to stderr (WASM safe)
+    eprintln!("[maps-plugin] input_len={} action={} args_count={} first_arg={:?}", 
+        input.len(), action, args.len(), args.first());
 
     if action.eq_ignore_ascii_case("geocode") {
         if let Some(locations) = payload.get("locations").and_then(Value::as_array) {
@@ -542,10 +546,12 @@ fn handle(input: &str) -> String {
     let mut resolved_from: Option<String> = None;
     let mut resolved_to: Option<String> = None;
 
+    // Try extracting from explicit payload fields first
     let (from, to) = if let (Some(f), Some(t)) = (
         payload.get("from").and_then(point_from_value),
         payload.get("to").and_then(point_from_value),
     ) {
+        eprintln!("[maps-plugin] Resolved from explicit from/to in payload");
         (f, t)
     } else if let Some(locations) = payload.get("locations").and_then(Value::as_array) {
         if locations.len() >= 2 {
@@ -589,16 +595,20 @@ fn handle(input: &str) -> String {
             .and_then(Value::as_str)
             .and_then(resolve_point_from_text),
     ) {
+        eprintln!("[maps-plugin] Resolved from explicit from_text/to_text in payload");
         resolved_from = Some(fs.1);
         resolved_to = Some(ts.1);
         (fs.0, ts.0)
     } else if let Some((f, t)) = parse_args_points(&args) {
+        eprintln!("[maps-plugin] Resolved from numeric args");
         (f, t)
     } else if let Some((fs, ts)) = parse_args_text_points(&args) {
+        eprintln!("[maps-plugin] Resolved from text args: {} -> {}", fs.1, ts.1);
         resolved_from = Some(fs.1);
         resolved_to = Some(ts.1);
         (fs.0, ts.0)
     } else {
+        eprintln!("[maps-plugin] ERROR: Could not resolve any points from args: {:?}", args);
         return json!({
             "ok": false,
             "error": "invalid_input",
@@ -619,24 +629,43 @@ fn handle(input: &str) -> String {
     .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"serialization\"}".to_string())
 }
 
+/// Shared memory buffer for input/output (WASM linear memory ABI).
+/// The host uses buffer_ptr() to find where to write input and read output.
+static mut BUFFER: [u8; 65536] = [0u8; 65536];
+
+/// Export the address of the I/O buffer so the host can write input here
+/// and read output from here, instead of using the hardcoded offset 0
+/// (which points into the shadow-stack area, not the BSS data segment).
 #[no_mangle]
-#[allow(invalid_null_arguments)]
+pub extern "C" fn buffer_ptr() -> i32 {
+    unsafe { BUFFER.as_ptr() as i32 }
+}
+
+#[no_mangle]
 pub extern "C" fn run(input_len: i32) -> i32 {
     if input_len < 0 {
         return 0;
     }
     let len = input_len as usize;
+    const BUFFER_SIZE: usize = 65536;
+    if len > BUFFER_SIZE {
+        return 0;  // Input too large
+    }
+
     let input = unsafe {
-        let ptr = 0 as *const u8;
-        let bytes = std::slice::from_raw_parts(ptr, len);
+        let bytes = std::slice::from_raw_parts(BUFFER.as_ptr(), len);
         std::str::from_utf8(bytes).unwrap_or("{}")
     };
 
     let output = handle(input);
     let out_bytes = output.as_bytes();
 
+    if out_bytes.len() > BUFFER_SIZE {
+        return 0;  // Output too large
+    }
+
     unsafe {
-        std::ptr::copy_nonoverlapping(out_bytes.as_ptr(), 0 as *mut u8, out_bytes.len());
+        std::ptr::copy_nonoverlapping(out_bytes.as_ptr(), BUFFER.as_mut_ptr(), out_bytes.len());
     }
 
     out_bytes.len() as i32
