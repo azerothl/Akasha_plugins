@@ -466,9 +466,17 @@ fn handle(input: &str) -> String {
         }
     }
     
-    // Debug: log input length to stderr (WASM safe)
-    eprintln!("[maps-plugin] input_len={} action={} args_count={} first_arg={:?}", 
-        input.len(), action, args.len(), args.first());
+    // Debug: log input stats to stderr in debug builds only (WASM safe, no raw args)
+    if cfg!(debug_assertions) {
+        let has_first_arg = args.first().is_some();
+        eprintln!(
+            "[maps-plugin] input_len={} action={} args_count={} has_first_arg={}",
+            input.len(),
+            action,
+            args.len(),
+            has_first_arg
+        );
+    }
 
     if action.eq_ignore_ascii_case("geocode") {
         if let Some(locations) = payload.get("locations").and_then(Value::as_array) {
@@ -551,7 +559,7 @@ fn handle(input: &str) -> String {
         payload.get("from").and_then(point_from_value),
         payload.get("to").and_then(point_from_value),
     ) {
-        eprintln!("[maps-plugin] Resolved from explicit from/to in payload");
+        if cfg!(debug_assertions) { eprintln!("[maps-plugin] Resolved from explicit from/to in payload"); }
         (f, t)
     } else if let Some(locations) = payload.get("locations").and_then(Value::as_array) {
         if locations.len() >= 2 {
@@ -595,20 +603,20 @@ fn handle(input: &str) -> String {
             .and_then(Value::as_str)
             .and_then(resolve_point_from_text),
     ) {
-        eprintln!("[maps-plugin] Resolved from explicit from_text/to_text in payload");
+        if cfg!(debug_assertions) { eprintln!("[maps-plugin] Resolved from explicit from_text/to_text in payload"); }
         resolved_from = Some(fs.1);
         resolved_to = Some(ts.1);
         (fs.0, ts.0)
     } else if let Some((f, t)) = parse_args_points(&args) {
-        eprintln!("[maps-plugin] Resolved from numeric args");
+        if cfg!(debug_assertions) { eprintln!("[maps-plugin] Resolved from numeric args"); }
         (f, t)
     } else if let Some((fs, ts)) = parse_args_text_points(&args) {
-        eprintln!("[maps-plugin] Resolved from text args: {} -> {}", fs.1, ts.1);
+        if cfg!(debug_assertions) { eprintln!("[maps-plugin] Resolved from text args"); }
         resolved_from = Some(fs.1);
         resolved_to = Some(ts.1);
         (fs.0, ts.0)
     } else {
-        eprintln!("[maps-plugin] ERROR: Could not resolve any points from args: {:?}", args);
+        if cfg!(debug_assertions) { eprintln!("[maps-plugin] ERROR: Could not resolve any points (args_count={})", args.len()); }
         return json!({
             "ok": false,
             "error": "invalid_input",
@@ -629,16 +637,29 @@ fn handle(input: &str) -> String {
     .unwrap_or_else(|_| "{\"ok\":false,\"error\":\"serialization\"}".to_string())
 }
 
+/// Size of the shared I/O buffer. The host must not read/write more than this
+/// many bytes relative to the pointer returned by `buffer_ptr()`.
+const BUFFER_SIZE: usize = 65536;
+
 /// Shared memory buffer for input/output (WASM linear memory ABI).
 /// The host uses buffer_ptr() to find where to write input and read output.
-static mut BUFFER: [u8; 65536] = [0u8; 65536];
+static mut BUFFER: [u8; BUFFER_SIZE] = [0u8; BUFFER_SIZE];
 
 /// Export the address of the I/O buffer so the host can write input here
 /// and read output from here, instead of using the hardcoded offset 0
 /// (which points into the shadow-stack area, not the BSS data segment).
+/// The returned value is an unsigned linear-memory byte offset (cast to i32
+/// for WASM ABI compatibility; the host should treat it as u32).
 #[no_mangle]
 pub extern "C" fn buffer_ptr() -> i32 {
     unsafe { BUFFER.as_ptr() as i32 }
+}
+
+/// Export the size of the I/O buffer so the host knows the maximum number of
+/// bytes it may write to (or read from) the address returned by `buffer_ptr()`.
+#[no_mangle]
+pub extern "C" fn buffer_len() -> i32 {
+    BUFFER_SIZE as i32
 }
 
 #[no_mangle]
@@ -647,17 +668,18 @@ pub extern "C" fn run(input_len: i32) -> i32 {
         return 0;
     }
     let len = input_len as usize;
-    const BUFFER_SIZE: usize = 65536;
     if len > BUFFER_SIZE {
         return 0;  // Input too large
     }
 
-    let input = unsafe {
+    // Copy input bytes into an owned String before we ever touch BUFFER again,
+    // so that the immutable borrow does not overlap the later mutable write.
+    let input: String = unsafe {
         let bytes = std::slice::from_raw_parts(BUFFER.as_ptr(), len);
-        std::str::from_utf8(bytes).unwrap_or("{}")
+        std::str::from_utf8(bytes).unwrap_or("{}").to_owned()
     };
 
-    let output = handle(input);
+    let output = handle(&input);
     let out_bytes = output.as_bytes();
 
     if out_bytes.len() > BUFFER_SIZE {
