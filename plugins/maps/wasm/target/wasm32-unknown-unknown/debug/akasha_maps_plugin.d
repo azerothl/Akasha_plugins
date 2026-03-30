@@ -1,0 +1,1 @@
+/home/runner/work/Akasha_plugins/Akasha_plugins/plugins/maps/wasm/target/wasm32-unknown-unknown/debug/akasha_maps_plugin.wasm: /home/runner/work/Akasha_plugins/Akasha_plugins/plugins/maps/wasm/src/lib.rs
