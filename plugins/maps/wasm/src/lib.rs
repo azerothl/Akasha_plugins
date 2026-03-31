@@ -81,7 +81,7 @@ const CITY_GAZETTEER: &[(&str, f64, f64, &[&str])] = &[
     ),
 ];
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 struct Point {
     lat: f64,
     lon: f64,
@@ -121,15 +121,33 @@ impl TravelMode {
 }
 
 #[derive(Serialize)]
-struct PluginResponse {
-    ok: bool,
-    view: &'static str,
-    summary: String,
+struct RouteOption {
+    id: &'static str,
+    label: String,
     mode: String,
     distance_m: f64,
     duration_s: f64,
     geometry: Value,
     steps: Vec<Value>,
+}
+
+#[derive(Serialize)]
+struct PluginResponse {
+    ok: bool,
+    view: &'static str,
+    summary: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    detail: Option<String>,
+    mode: String,
+    distance_m: f64,
+    duration_s: f64,
+    geometry: Value,
+    steps: Vec<Value>,
+    routes: Vec<RouteOption>,
+    bbox: Value,
+    osm_embed_url: String,
+    osm_browse_url: String,
+    map_attribution: String,
     resolved_from: Option<String>,
     resolved_to: Option<String>,
 }
@@ -252,6 +270,161 @@ fn haversine_m(from: Point, to: Point) -> f64 {
         + lat1.cos() * lat2.cos() * (d_lon / 2.0).sin().powi(2);
     let c = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
     r * c
+}
+
+fn polyline_length_m(points: &[Point]) -> f64 {
+    if points.len() < 2 {
+        return 0.0;
+    }
+    points
+        .windows(2)
+        .map(|w| haversine_m(w[0], w[1]))
+        .sum()
+}
+
+fn interpolate_line(from: Point, to: Point, n_segments: usize) -> Vec<Point> {
+    let n = n_segments.max(1);
+    let mut out = Vec::with_capacity(n + 1);
+    for i in 0..=n {
+        let t = i as f64 / n as f64;
+        out.push(Point {
+            lat: from.lat + (to.lat - from.lat) * t,
+            lon: from.lon + (to.lon - from.lon) * t,
+        });
+    }
+    out
+}
+
+/// Second car option: bent path via a lateral offset at the midpoint (illustrative, not OSM-routed).
+fn detour_polyline(from: Point, to: Point, n_seg: usize, offset_deg: f64) -> Vec<Point> {
+    let n = n_seg.max(4);
+    let mid_lat = (from.lat + to.lat) / 2.0;
+    let mid_lon = (from.lon + to.lon) / 2.0;
+    let dlat = to.lat - from.lat;
+    let dlon = to.lon - from.lon;
+    let len = (dlat * dlat + dlon * dlon).sqrt().max(1e-9);
+    let ox = (-dlon / len) * offset_deg;
+    let oy = (dlat / len) * offset_deg;
+    let via = Point {
+        lat: mid_lat + oy,
+        lon: mid_lon + ox,
+    };
+    let half = n / 2;
+    let mut a = interpolate_line(from, via, half.max(1));
+    a.pop();
+    let mut b = interpolate_line(via, to, (n - half).max(1));
+    a.append(&mut b);
+    a
+}
+
+fn linestring_geojson(points_v: &[Point]) -> Value {
+    let coords: Vec<Vec<f64>> = points_v
+        .iter()
+        .map(|p| vec![p.lon, p.lat])
+        .collect();
+    json!({
+        "type": "LineString",
+        "coordinates": coords
+    })
+}
+
+fn bbox_for_points(points: &[Point], pad_deg: f64) -> Value {
+    if points.is_empty() {
+        return json!({});
+    }
+    let mut min_lat = f64::INFINITY;
+    let mut max_lat = f64::NEG_INFINITY;
+    let mut min_lon = f64::INFINITY;
+    let mut max_lon = f64::NEG_INFINITY;
+    for p in points {
+        min_lat = min_lat.min(p.lat);
+        max_lat = max_lat.max(p.lat);
+        min_lon = min_lon.min(p.lon);
+        max_lon = max_lon.max(p.lon);
+    }
+    json!({
+        "min_lat": min_lat - pad_deg,
+        "max_lat": max_lat + pad_deg,
+        "min_lon": min_lon - pad_deg,
+        "max_lon": max_lon + pad_deg
+    })
+}
+
+fn osm_embed_from_bbox(bbox: &Value) -> String {
+    let Some(obj) = bbox.as_object() else {
+        return String::new();
+    };
+    let gl = |k: &str| obj.get(k).and_then(Value::as_f64);
+    match (gl("min_lon"), gl("min_lat"), gl("max_lon"), gl("max_lat")) {
+        (Some(a), Some(b), Some(c), Some(d)) if c > a && d > b => format!(
+            "https://www.openstreetmap.org/export/embed.html?bbox={},{},{},{}&layer=mapnik",
+            a, b, c, d
+        ),
+        _ => String::new(),
+    }
+}
+
+fn osm_browse_url_from_bbox(bbox: &Value) -> String {
+    let Some(obj) = bbox.as_object() else {
+        return "https://www.openstreetmap.org".into();
+    };
+    let gl = |k: &str| obj.get(k).and_then(Value::as_f64);
+    match (gl("min_lon"), gl("min_lat"), gl("max_lon"), gl("max_lat")) {
+        (Some(a), Some(b), Some(c), Some(d)) if c > a && d > b => {
+            let lat = (b + d) / 2.0;
+            let lon = (a + c) / 2.0;
+            let span = (d - b).max(c - a);
+            let z = if span > 8.0 {
+                5
+            } else if span > 4.0 {
+                6
+            } else if span > 1.5 {
+                7
+            } else if span > 0.6 {
+                8
+            } else if span > 0.25 {
+                9
+            } else {
+                10
+            };
+            format!("https://www.openstreetmap.org/#map={}/{}/{}", z, lat, lon)
+        }
+        _ => "https://www.openstreetmap.org".into(),
+    }
+}
+
+fn ordinal_labels_for_polyline(points: &[Point], from_l: &str, to_l: &str) -> Vec<Value> {
+    if points.len() < 2 {
+        return vec![json!({
+            "instruction": format!("Point unique — {}", to_l),
+            "distance_m": 0
+        })];
+    }
+    let mut steps = Vec::new();
+    for w in points.windows(2) {
+        let d = haversine_m(w[0], w[1]);
+        let instr = if steps.is_empty() {
+            format!(
+                "Départ : {} — orientation générale vers {} (~{:.1} km)",
+                from_l,
+                to_l,
+                d / 1000.0
+            )
+        } else if w[1] == *points.last().unwrap() {
+            format!(
+                "Arrivée : approche de {} (~{:.1} km)",
+                to_l,
+                d / 1000.0
+            )
+        } else {
+            format!(
+                "Poursuivre sur l’itinéraire estimé (~{:.1} km) — axes principaux",
+                d / 1000.0
+            )
+        };
+        steps.push(json!({"instruction": instr, "distance_m": d}));
+    }
+    steps
 }
 
 fn point_from_value(v: &Value) -> Option<Point> {
@@ -396,40 +569,117 @@ fn build_response(
     resolved_from: Option<String>,
     resolved_to: Option<String>,
 ) -> PluginResponse {
-    let distance_m = haversine_m(from, to);
-    let duration_s = (distance_m / 1000.0) / mode.average_speed_kmh() * 3600.0;
+    let from_l = resolved_from
+        .as_deref()
+        .unwrap_or("origine")
+        .to_string();
+    let to_l = resolved_to.as_deref().unwrap_or("destination").to_string();
+
+    let chord_m = haversine_m(from, to);
     let is_distance_only = action.contains("distance");
+
+    let n_seg = 24_usize;
+    let primary_pts = interpolate_line(from, to, n_seg);
+    let chord_km = chord_m / 1000.0;
+    let offset_deg = (chord_km / 900.0).clamp(0.05, 0.35);
+    let alt_pts = detour_polyline(from, to, n_seg, offset_deg);
+
+    let train_mode = TravelMode::Train;
+    let train_duration_s = (chord_m / 1000.0) / train_mode.average_speed_kmh() * 3600.0;
+
+    let primary_dist = polyline_length_m(&primary_pts);
+    let alt_dist = polyline_length_m(&alt_pts);
+
+    let primary_duration = (primary_dist / 1000.0) / mode.average_speed_kmh() * 3600.0;
+    let alt_duration = (alt_dist / 1000.0) / mode.average_speed_kmh() * 3600.0;
 
     let summary = if is_distance_only {
         format!(
-            "Estimated distance: {:.1} km ({})",
-            distance_m / 1000.0,
-            mode.as_str()
+            "Distance estimée : {:.1} km ({}), durée indicative ~{:.0} min. Tracé sur carte = ligne simplifiée entre les centres résolus.",
+            chord_m / 1000.0,
+            mode.as_str(),
+            primary_duration / 60.0
         )
     } else {
         format!(
-            "Estimated route: {:.1} km, {:.0} min ({})",
-            distance_m / 1000.0,
-            duration_s / 60.0,
+            "Itinéraire estimé : {:.1} km, ~{:.0} min ({}). Voir la carte, les variantes et les étapes ; pour le détail routier réel, ouvrir OpenStreetMap ou une appli GPS.",
+            chord_m / 1000.0,
+            primary_duration / 60.0,
             mode.as_str()
         )
     };
+
+    let detail = Some(
+        "Les tracés sont des estimations entre coordonnées du gazetteer (pas de calcul routier OSRM/ORS). Les alternatives illustrent un autre corridor et un mode train indicatif.".to_string(),
+    );
+
+    let routes = vec![
+        RouteOption {
+            id: "primary_car",
+            label: format!("Voiture — direct (~{:.0} min)", primary_duration / 60.0),
+            mode: mode.as_str().to_string(),
+            distance_m: primary_dist,
+            duration_s: primary_duration,
+            geometry: linestring_geojson(&primary_pts),
+            steps: ordinal_labels_for_polyline(&primary_pts, &from_l, &to_l),
+        },
+        RouteOption {
+            id: "alt_corridor",
+            label: format!(
+                "Voiture — variante corridor (+{:.1} km vs direct)",
+                (alt_dist - primary_dist) / 1000.0
+            ),
+            mode: mode.as_str().to_string(),
+            distance_m: alt_dist,
+            duration_s: alt_duration,
+            geometry: linestring_geojson(&alt_pts),
+            steps: ordinal_labels_for_polyline(&alt_pts, &from_l, &to_l),
+        },
+        RouteOption {
+            id: "train_indicator",
+            label: format!(
+                "Train — temps indicatif (~{:.0} min, tracé ≠ voies réelles)",
+                train_duration_s / 60.0
+            ),
+            mode: train_mode.as_str().to_string(),
+            distance_m: chord_m,
+            duration_s: train_duration_s,
+            geometry: linestring_geojson(&primary_pts),
+            steps: vec![json!({
+                "instruction": format!(
+                    "Temps de parcours train approximatif (grande vitesse moyenne indicative) entre {} et {} — vérifier les gares et correspondances.",
+                    from_l, to_l
+                ),
+                "distance_m": chord_m
+            })],
+        },
+    ];
+
+    let mut all_pts = primary_pts.clone();
+    all_pts.extend(alt_pts.iter().copied());
+
+    let bbox = bbox_for_points(&all_pts, 0.08);
+    let osm_embed_url = osm_embed_from_bbox(&bbox);
+    let osm_browse_url = osm_browse_url_from_bbox(&bbox);
+
+    let primary_geom = routes[0].geometry.clone();
+    let primary_steps = routes[0].steps.clone();
 
     PluginResponse {
         ok: true,
         view: "map",
         summary,
+        detail,
         mode: mode.as_str().to_string(),
-        distance_m,
-        duration_s,
-        geometry: json!({
-            "type": "LineString",
-            "coordinates": [[from.lon, from.lat], [to.lon, to.lat]]
-        }),
-        steps: vec![json!({
-            "instruction": "Go to destination",
-            "distance_m": distance_m
-        })],
+        distance_m: chord_m,
+        duration_s: primary_duration,
+        geometry: primary_geom,
+        steps: primary_steps,
+        routes,
+        bbox,
+        osm_embed_url,
+        osm_browse_url,
+        map_attribution: "© OpenStreetMap contributors — embarqué sous licence ODbL.".to_string(),
         resolved_from,
         resolved_to,
     }
@@ -652,7 +902,7 @@ static mut BUFFER: [u8; BUFFER_SIZE] = [0u8; BUFFER_SIZE];
 /// for WASM ABI compatibility; the host should treat it as u32).
 #[no_mangle]
 pub extern "C" fn buffer_ptr() -> i32 {
-    unsafe { BUFFER.as_ptr() as i32 }
+    std::ptr::addr_of_mut!(BUFFER) as *mut u8 as i32
 }
 
 /// Export the size of the I/O buffer so the host knows the maximum number of
@@ -675,7 +925,7 @@ pub extern "C" fn run(input_len: i32) -> i32 {
     // Copy input bytes into an owned String before we ever touch BUFFER again,
     // so that the immutable borrow does not overlap the later mutable write.
     let input: String = unsafe {
-        let bytes = std::slice::from_raw_parts(BUFFER.as_ptr(), len);
+        let bytes = std::slice::from_raw_parts(std::ptr::addr_of!(BUFFER) as *const u8, len);
         std::str::from_utf8(bytes).unwrap_or("{}").to_owned()
     };
 
@@ -687,7 +937,11 @@ pub extern "C" fn run(input_len: i32) -> i32 {
     }
 
     unsafe {
-        std::ptr::copy_nonoverlapping(out_bytes.as_ptr(), BUFFER.as_mut_ptr(), out_bytes.len());
+        std::ptr::copy_nonoverlapping(
+            out_bytes.as_ptr(),
+            std::ptr::addr_of_mut!(BUFFER) as *mut u8,
+            out_bytes.len(),
+        );
     }
 
     out_bytes.len() as i32

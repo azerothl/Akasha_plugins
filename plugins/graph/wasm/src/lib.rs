@@ -221,23 +221,44 @@ fn handle(input: &str) -> String {
 }
 
 #[no_mangle]
-#[allow(invalid_null_arguments)]
+pub extern "C" fn buffer_ptr() -> i32 {
+    std::ptr::addr_of_mut!(BUFFER) as *mut u8 as i32
+}
+
+#[no_mangle]
+pub extern "C" fn buffer_len() -> i32 {
+    BUFFER_SIZE as i32
+}
+
+const BUFFER_SIZE: usize = 65536;
+static mut BUFFER: [u8; BUFFER_SIZE] = [0u8; BUFFER_SIZE];
+
+#[no_mangle]
 pub extern "C" fn run(input_len: i32) -> i32 {
     if input_len < 0 {
         return 0;
     }
     let len = input_len as usize;
+    if len > BUFFER_SIZE {
+        return 0;
+    }
     let input = unsafe {
-        let ptr = 0 as *const u8;
-        let bytes = std::slice::from_raw_parts(ptr, len);
-        std::str::from_utf8(bytes).unwrap_or("{}")
+        let bytes = std::slice::from_raw_parts(std::ptr::addr_of!(BUFFER) as *const u8, len);
+        std::str::from_utf8(bytes).unwrap_or("{}").to_owned()
     };
 
-    let output = handle(input);
+    let output = handle(&input);
     let out_bytes = output.as_bytes();
+    if out_bytes.len() > BUFFER_SIZE {
+        return 0;
+    }
 
     unsafe {
-        std::ptr::copy_nonoverlapping(out_bytes.as_ptr(), 0 as *mut u8, out_bytes.len());
+        std::ptr::copy_nonoverlapping(
+            out_bytes.as_ptr(),
+            std::ptr::addr_of_mut!(BUFFER) as *mut u8,
+            out_bytes.len(),
+        );
     }
 
     out_bytes.len() as i32

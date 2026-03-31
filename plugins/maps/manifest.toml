@@ -1,6 +1,6 @@
 id = "maps"
 name = "Maps Tool"
-version = "0.1.0"
+version = "0.2.0"
 kind = "tool"
 wasm_path = "plugin.wasm"
 description = "Routes, distances and ETA between two points"
