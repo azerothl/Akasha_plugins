@@ -6,6 +6,15 @@ wasm_path = "plugin.wasm"
 description = "Routes, distances and ETA between two points"
 permissions = ["network"]
 
+[network]
+allowed_url_prefixes = [
+  "https://router.project-osrm.org",
+]
+max_response_bytes = 2000000
+timeout_ms = 25000
+https_only = true
+max_requests_per_run = 4
+
 [[routing_rules]]
 intent = "geolocation_distance"
 keywords = ["distance", "itinéraire", "itineraire", "trajet", "route", "entre", "de", "vers"]

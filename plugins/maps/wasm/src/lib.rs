@@ -1,3 +1,5 @@
+mod host_http;
+
 use serde::Serialize;
 use serde_json::{json, Value};
 
@@ -138,6 +140,8 @@ struct PluginResponse {
     summary: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     detail: Option<String>,
+    /// `road_network` (OSRM) or `great_circle_estimate` (gazetteer / fallback).
+    geometry_kind: String,
     mode: String,
     distance_m: f64,
     duration_s: f64,
@@ -282,6 +286,8 @@ fn polyline_length_m(points: &[Point]) -> f64 {
         .sum()
 }
 
+/// Linear interpolation in lat/lon (rarely needed — tends to read as a meaningless diagonal in UI).
+#[allow(dead_code)]
 fn interpolate_line(from: Point, to: Point, n_segments: usize) -> Vec<Point> {
     let n = n_segments.max(1);
     let mut out = Vec::with_capacity(n + 1);
@@ -291,6 +297,47 @@ fn interpolate_line(from: Point, to: Point, n_segments: usize) -> Vec<Point> {
             lat: from.lat + (to.lat - from.lat) * t,
             lon: from.lon + (to.lon - from.lon) * t,
         });
+    }
+    out
+}
+
+/// Densify the geographic shortest path on the sphere so a lon/lat schematic curves like a map trajectory.
+fn interpolate_great_circle(from: Point, to: Point, n_segments: usize) -> Vec<Point> {
+    let n = n_segments.max(1);
+    let lat1 = from.lat.to_radians();
+    let lon1 = from.lon.to_radians();
+    let lat2 = to.lat.to_radians();
+    let lon2 = to.lon.to_radians();
+
+    let sin_lat1 = lat1.sin();
+    let cos_lat1 = lat1.cos();
+    let sin_lat2 = lat2.sin();
+    let cos_lat2 = lat2.cos();
+    let dlon = lon2 - lon1;
+
+    let cos_d = (sin_lat1 * sin_lat2 + cos_lat1 * cos_lat2 * dlon.cos()).clamp(-1.0, 1.0);
+    let d = cos_d.acos();
+
+    if !d.is_finite() || d < 1e-9 {
+        return vec![from, to];
+    }
+
+    let sin_d = d.sin();
+    if sin_d.abs() < 1e-10 {
+        return vec![from, to];
+    }
+
+    let mut out = Vec::with_capacity(n + 1);
+    for i in 0..=n {
+        let t = i as f64 / n as f64;
+        let a = ((1.0 - t) * d).sin() / sin_d;
+        let b = (t * d).sin() / sin_d;
+        let x = a * cos_lat1 * lon1.cos() + b * cos_lat2 * lon2.cos();
+        let y = a * cos_lat1 * lon1.sin() + b * cos_lat2 * lon2.sin();
+        let z = a * sin_lat1 + b * sin_lat2;
+        let lat = z.atan2((x * x + y * y).sqrt()).to_degrees();
+        let lon = y.atan2(x).to_degrees();
+        out.push(Point { lat, lon });
     }
     out
 }
@@ -310,9 +357,9 @@ fn detour_polyline(from: Point, to: Point, n_seg: usize, offset_deg: f64) -> Vec
         lon: mid_lon + ox,
     };
     let half = n / 2;
-    let mut a = interpolate_line(from, via, half.max(1));
+    let mut a = interpolate_great_circle(from, via, half.max(1));
     a.pop();
-    let mut b = interpolate_line(via, to, (n - half).max(1));
+    let mut b = interpolate_great_circle(via, to, (n - half).max(1));
     a.append(&mut b);
     a
 }
@@ -561,6 +608,185 @@ fn extract_payload(input: &Value) -> (String, Value, Vec<String>) {
     (action, payload, args)
 }
 
+fn osrm_route_steps(route: &Value) -> Vec<Value> {
+    let mut out = Vec::new();
+    let Some(legs) = route.get("legs").and_then(|x| x.as_array()) else {
+        return out;
+    };
+    for leg in legs {
+        let Some(steps) = leg.get("steps").and_then(|x| x.as_array()) else {
+            continue;
+        };
+        for s in steps {
+            let dist = s.get("distance").and_then(|x| x.as_f64()).unwrap_or(0.0);
+            let name = s.get("name").and_then(|n| n.as_str()).unwrap_or("");
+            let instr = if !name.is_empty() {
+                format!("{} — {:.2} km", name, dist / 1000.0)
+            } else {
+                let typ = s
+                    .get("maneuver")
+                    .and_then(|m| m.get("type"))
+                    .and_then(|x| x.as_str())
+                    .unwrap_or("segment");
+                format!("{} — {:.2} km", typ, dist / 1000.0)
+            };
+            out.push(json!({"instruction": instr, "distance_m": dist}));
+        }
+    }
+    out
+}
+
+/// Returns road geometry from OSRM public demo (rate-limited; configure host allowlist).
+fn try_osrm_route(
+    from: Point,
+    to: Point,
+    profile: &str,
+) -> Option<(Vec<Point>, f64, f64, Vec<Value>)> {
+    let url = format!(
+        "https://router.project-osrm.org/route/v1/{}/{:.6},{:.6};{:.6},{:.6}?overview=full&geometries=geojson&steps=true",
+        profile, from.lon, from.lat, to.lon, to.lat
+    );
+    let req = json!({"url": url, "method": "GET"});
+    let txt = host_http::http_fetch_json(&req).ok()?;
+    let body = host_http::decode_fetch_response(&txt).ok()?;
+    let j: Value = serde_json::from_slice(&body).ok()?;
+    let route = j.get("routes")?.as_array()?.first()?;
+    let coords = route.get("geometry")?.get("coordinates")?.as_array()?;
+    let mut pts = Vec::new();
+    for c in coords {
+        let arr = c.as_array()?;
+        let lon = arr.get(0)?.as_f64()?;
+        let lat = arr.get(1)?.as_f64()?;
+        pts.push(Point { lat, lon });
+    }
+    if pts.len() < 2 {
+        return None;
+    }
+    let distance_m = route.get("distance")?.as_f64()?;
+    let duration_s = route.get("duration")?.as_f64()?;
+    let steps = osrm_route_steps(route);
+    Some((pts, distance_m, duration_s, steps))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn build_response_osrm(
+    mode: TravelMode,
+    from: Point,
+    to: Point,
+    from_l: &str,
+    to_l: &str,
+    resolved_from: Option<String>,
+    resolved_to: Option<String>,
+    chord_m: f64,
+    road_pts: Vec<Point>,
+    road_dist: f64,
+    road_dur: f64,
+    road_steps: Vec<Value>,
+) -> PluginResponse {
+    let chord_km = chord_m / 1000.0;
+    let offset_deg = (chord_km / 900.0).clamp(0.05, 0.35);
+    let n_seg = 24_usize;
+    let alt_pts = detour_polyline(from, to, n_seg, offset_deg);
+    let alt_dist = polyline_length_m(&alt_pts);
+    let alt_duration = (alt_dist / 1000.0) / mode.average_speed_kmh() * 3600.0;
+
+    let train_mode = TravelMode::Train;
+    let train_duration_s = (chord_m / 1000.0) / train_mode.average_speed_kmh() * 3600.0;
+
+    let primary_gc = interpolate_great_circle(from, to, n_seg);
+
+    let primary_label = match mode {
+        TravelMode::Walking => format!("À pied — route (~{:.0} min)", road_dur / 60.0),
+        _ => format!("Voiture — route (~{:.0} min)", road_dur / 60.0),
+    };
+
+    let summary = format!(
+        "Itinéraire routier (OSRM, données OpenStreetMap) : {:.1} km, ~{:.0} min. Une variante « corridor » et une option train restent indicatives.",
+        road_dist / 1000.0,
+        road_dur / 60.0
+    );
+
+    let detail = Some(
+        "Tracé principal calculé par le moteur OSRM (Project-OSRM). Soumis aux limites du service public ; pour la production, hébergez votre propre instance.".to_string(),
+    );
+
+    let routes = vec![
+        RouteOption {
+            id: "primary_road",
+            label: primary_label,
+            mode: mode.as_str().to_string(),
+            distance_m: road_dist,
+            duration_s: road_dur,
+            geometry: linestring_geojson(&road_pts),
+            steps: if road_steps.is_empty() {
+                ordinal_labels_for_polyline(&road_pts, from_l, to_l)
+            } else {
+                road_steps
+            },
+        },
+        RouteOption {
+            id: "alt_corridor",
+            label: format!(
+                "Variante corridor (estimation, +{:.1} km vs route)",
+                (alt_dist - road_dist).max(0.0) / 1000.0
+            ),
+            mode: mode.as_str().to_string(),
+            distance_m: alt_dist,
+            duration_s: alt_duration,
+            geometry: linestring_geojson(&alt_pts),
+            steps: ordinal_labels_for_polyline(&alt_pts, from_l, to_l),
+        },
+        RouteOption {
+            id: "train_indicator",
+            label: format!(
+                "Train — temps indicatif (~{:.0} min, tracé ≠ voies réelles)",
+                train_duration_s / 60.0
+            ),
+            mode: train_mode.as_str().to_string(),
+            distance_m: chord_m,
+            duration_s: train_duration_s,
+            geometry: linestring_geojson(&primary_gc),
+            steps: vec![json!({
+                "instruction": format!(
+                    "Temps de parcours train approximatif entre {} et {} — vérifier les gares.",
+                    from_l, to_l
+                ),
+                "distance_m": chord_m
+            })],
+        },
+    ];
+
+    let mut all_pts = road_pts.clone();
+    all_pts.extend(alt_pts.iter().copied());
+
+    let bbox = bbox_for_points(&all_pts, 0.08);
+    let osm_embed_url = osm_embed_from_bbox(&bbox);
+    let osm_browse_url = osm_browse_url_from_bbox(&bbox);
+
+    let primary_geom = routes[0].geometry.clone();
+    let primary_steps = routes[0].steps.clone();
+
+    PluginResponse {
+        ok: true,
+        view: "map",
+        summary,
+        detail,
+        geometry_kind: "road_network".to_string(),
+        mode: mode.as_str().to_string(),
+        distance_m: road_dist,
+        duration_s: road_dur,
+        geometry: primary_geom,
+        steps: primary_steps,
+        routes,
+        bbox,
+        osm_embed_url,
+        osm_browse_url,
+        map_attribution: "© OpenStreetMap contributors — routage OSRM (ODbL).".to_string(),
+        resolved_from,
+        resolved_to,
+    }
+}
+
 fn build_response(
     action: &str,
     mode: TravelMode,
@@ -578,8 +804,36 @@ fn build_response(
     let chord_m = haversine_m(from, to);
     let is_distance_only = action.contains("distance");
 
+    if !is_distance_only {
+        let profile = match mode {
+            TravelMode::Walking => "walking",
+            TravelMode::Car => "driving",
+            TravelMode::Train => "",
+        };
+        if !profile.is_empty() {
+            if let Some((road_pts, road_dist, road_dur, road_steps)) =
+                try_osrm_route(from, to, profile)
+            {
+                return build_response_osrm(
+                    mode,
+                    from,
+                    to,
+                    &from_l,
+                    &to_l,
+                    resolved_from.clone(),
+                    resolved_to.clone(),
+                    chord_m,
+                    road_pts,
+                    road_dist,
+                    road_dur,
+                    road_steps,
+                );
+            }
+        }
+    }
+
     let n_seg = 24_usize;
-    let primary_pts = interpolate_line(from, to, n_seg);
+    let primary_pts = interpolate_great_circle(from, to, n_seg);
     let chord_km = chord_m / 1000.0;
     let offset_deg = (chord_km / 900.0).clamp(0.05, 0.35);
     let alt_pts = detour_polyline(from, to, n_seg, offset_deg);
@@ -670,6 +924,7 @@ fn build_response(
         view: "map",
         summary,
         detail,
+        geometry_kind: "great_circle_estimate".to_string(),
         mode: mode.as_str().to_string(),
         distance_m: chord_m,
         duration_s: primary_duration,
