@@ -17,7 +17,7 @@ max_requests_per_run = 4
 
 [[routing_rules]]
 intent = "geolocation_distance"
-keywords = ["distance", "itinéraire", "itineraire", "trajet", "route", "entre", "de", "vers"]
+keywords = ["distance", "itinéraire", "itineraire", "trajet", "route", "entre", "vers"]
 preferred_tools = ["maps_geocode", "maps_distance", "maps_route"]
 forbidden_tools = ["memory_store", "write_file", "create_file", "security_audit"]
 priority = 100
