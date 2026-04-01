@@ -650,6 +650,9 @@ fn try_osrm_route(
     let txt = host_http::http_fetch_json(&req).ok()?;
     let body = host_http::decode_fetch_response(&txt).ok()?;
     let j: Value = serde_json::from_slice(&body).ok()?;
+    if j.get("code").and_then(|c| c.as_str()) != Some("Ok") {
+        return None;
+    }
     let route = j.get("routes")?.as_array()?.first()?;
     let coords = route.get("geometry")?.get("coordinates")?.as_array()?;
     let mut pts = Vec::new();
@@ -660,6 +663,13 @@ fn try_osrm_route(
         pts.push(Point { lat, lon });
     }
     if pts.len() < 2 {
+        return None;
+    }
+    // Reject routes that do not start/end near the requested coordinates (bad snap / corrupt JSON).
+    const SNAP_TOLERANCE_M: f64 = 5000.0;
+    let first = *pts.first()?;
+    let last = *pts.last()?;
+    if haversine_m(first, from) > SNAP_TOLERANCE_M || haversine_m(last, to) > SNAP_TOLERANCE_M {
         return None;
     }
     let distance_m = route.get("distance")?.as_f64()?;
