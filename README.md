@@ -53,6 +53,10 @@ List installed:
 
 ---
 
+## Trust catalog (hash, review, MCP)
+
+See **[TRUST_CATALOG.md](TRUST_CATALOG.md)** for the roadmap on WASM digest, signatures, visible permissions, and MCP/hook alignment with the core daemon.
+
 ## Catalog format (`plugin.json`)
 
 `plugin.json` is for this repository catalog and website.

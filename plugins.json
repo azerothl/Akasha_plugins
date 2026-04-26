@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-04-01T18:25:14.966303+00:00",
+  "generated_at": "2026-04-26T14:46:58.506798+00:00",
   "count": 3,
   "plugins": [
     {
@@ -28,7 +28,8 @@
         "table",
         "summary"
       ],
-      "path": "plugins/graph"
+      "path": "plugins/graph",
+      "wasm_sha256": "0730e8a5bcc8f360b91619bc118d71a9c7cb302a33ccc66509906ae98a591d1a"
     },
     {
       "id": "maps",
@@ -61,7 +62,8 @@
         "table",
         "summary"
       ],
-      "path": "plugins/maps"
+      "path": "plugins/maps",
+      "wasm_sha256": "c5f3b3a765a1a7ffa04da118c9565b53365a158a976c1a6a5e795f20cb9deac6"
     },
     {
       "id": "simulation",
@@ -88,7 +90,8 @@
         "table",
         "summary"
       ],
-      "path": "plugins/simulation"
+      "path": "plugins/simulation",
+      "wasm_sha256": "d3ca10e946a4c3d1a4d4f84cfffd731baf653a452af7dc66507b8746c2603105"
     }
   ]
 }

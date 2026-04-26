@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 from datetime import datetime, timezone
@@ -17,6 +18,15 @@ def load_plugin_json(path: Path) -> dict:
         data = json.load(f)
     data.setdefault("id", path.parent.name)
     data.setdefault("path", str(path.parent.relative_to(ROOT)).replace("\\", "/"))
+    wasm = path.parent / "plugin.wasm"
+    if wasm.is_file():
+        h = hashlib.sha256()
+        with wasm.open("rb") as wf:
+            for chunk in iter(lambda: wf.read(1024 * 1024), b""):
+                h.update(chunk)
+        data["wasm_sha256"] = h.hexdigest()
+    else:
+        data.pop("wasm_sha256", None)
     return data
 
 
