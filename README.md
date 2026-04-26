@@ -27,7 +27,8 @@ Akasha_plugins/
 ├── index.html            # simple catalog page
 └── .github/
     └── workflows/
-        └── sync-plugins.yml
+        ├── sync-plugins.yml
+        └── plugins-catalog-validate.yml   # CI: rebuild + validate plugins.json (semver, wasm_sha256 hex)
 ```
 
 ---

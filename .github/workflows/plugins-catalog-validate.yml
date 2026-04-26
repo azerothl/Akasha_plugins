@@ -1,0 +1,48 @@
+name: Plugins catalog validate
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "plugins/**"
+      - "scripts/build_plugins.py"
+  pull_request:
+    branches: [main]
+    paths:
+      - "plugins/**"
+      - "scripts/build_plugins.py"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Build plugins.json
+        run: python3 scripts/build_plugins.py
+      - name: Validate catalog
+        run: |
+          python3 << 'PY'
+          import json, pathlib, re, sys
+          root = pathlib.Path("plugins.json")
+          data = json.loads(root.read_text(encoding="utf-8"))
+          plugins = data.get("plugins") or []
+          if not isinstance(plugins, list) or not plugins:
+              sys.exit("plugins.json: missing or empty plugins array")
+          semver = re.compile(r"^\d+\.\d+\.\d+")
+          sha_re = re.compile(r"^[a-f0-9]{64}$")
+          for i, p in enumerate(plugins):
+              if not isinstance(p, dict):
+                  sys.exit(f"plugin {i}: not an object")
+              for k in ("id", "name", "version"):
+                  if not str(p.get(k, "")).strip():
+                      sys.exit(f"plugin {i}: missing {k}")
+              if not semver.match(str(p["version"]).strip()):
+                  sys.exit(f"plugin {i} id={p.get('id')!r}: version should be semver x.y.z")
+              w = p.get("wasm_sha256")
+              if w is not None and str(w).strip() and not sha_re.match(str(w).strip().lower()):
+                  sys.exit(f"plugin {i} id={p.get('id')!r}: wasm_sha256 must be 64 hex chars when set")
+          print(f"OK: {len(plugins)} plugin(s)")
+          PY
