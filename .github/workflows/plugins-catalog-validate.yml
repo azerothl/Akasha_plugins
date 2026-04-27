@@ -44,5 +44,9 @@ jobs:
               w = p.get("wasm_sha256")
               if w is not None and str(w).strip() and not sha_re.match(str(w).strip().lower()):
                   sys.exit(f"plugin {i} id={p.get('id')!r}: wasm_sha256 must be 64 hex chars when set")
+              he = p.get("hook_events")
+              if he is not None:
+                  if not isinstance(he, list) or any((not isinstance(x, str) or not x.strip()) for x in he):
+                      sys.exit(f"plugin {i} id={p.get('id')!r}: hook_events must be an array of non-empty strings")
           print(f"OK: {len(plugins)} plugin(s)")
           PY
