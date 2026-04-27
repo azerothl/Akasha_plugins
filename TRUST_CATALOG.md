@@ -12,6 +12,7 @@
 | **SHA256 / signature** | `scripts/build_plugins.py` now embeds **`wasm_sha256`** in `plugins.json` when `plugins/<id>/plugin.wasm` exists (run after WASM build). Optional minisign/sigstore attestation later. |
 | **Trust metadata** | Maintainer, review status, last security review date in `plugins.json`. |
 | **MCP bridges** | Document which WASM tools wrap or delegate to MCP servers (`docs/mcp-runtime.md` in core). |
-| **Hooks** | Align with daemon `lifecycle_hooks.json` / future gateway hooks (`docs/gateway-shell-hooks.md` in core). |
+| **Hooks** | Align with daemon `lifecycle_hooks.json` + gateway HTTP hooks (`docs/gateway-shell-hooks.md` in core). |
+| **WASM hook events** | Convention catalogue : champ optionnel `hook_events` (liste de chaînes) dans `plugin.json` pour documenter quels événements le plugin observe ; exécution côté daemon/host reste **roadmap** (voir matrice Hermes « plugin-level WASM hook events »). |
 
 PRs welcome: extend `scripts/build_plugins.py` to embed `wasm_sha256` from built artifacts.
