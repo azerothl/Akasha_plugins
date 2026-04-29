@@ -58,6 +58,16 @@ List installed:
 
 See **[TRUST_CATALOG.md](TRUST_CATALOG.md)** for the roadmap on WASM digest, signatures, visible permissions, and MCP/hook alignment with the core daemon.
 
+## Runtime event alignment
+
+For plugin tool integrations targeting current Akasha clients:
+
+- Emit or map lifecycle signals consistently with daemon task events (`tool_call_started`, `tool_call_finished`).
+- Keep payloads deterministic and include correlation identifiers when available.
+- Design plugin outputs so UIs can render both rich and fallback forms without assuming a single channel.
+
+This improves timeline coherence in Code Studio, Tauri UI, and TUI.
+
 ## Catalog format (`plugin.json`)
 
 `plugin.json` is for this repository catalog and website.
