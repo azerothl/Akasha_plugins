@@ -1,0 +1,13 @@
+id = "matrix-channel"
+name = "Matrix Channel"
+version = "0.1.0"
+kind = "channel"
+wasm_path = "plugin.wasm"
+description = "Matrix homeserver channel bridge (stub — registers channel hooks)"
+permissions = ["network"]
+
+[network]
+allowed_url_prefixes = ["https://"]
+https_only = true
+max_requests_per_run = 4
+timeout_ms = 20000

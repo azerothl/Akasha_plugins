@@ -1,0 +1,20 @@
+{
+  "id": "matrix-channel",
+  "name": "Matrix Channel",
+  "version": "0.1.0",
+  "description": "Matrix homeserver channel bridge (stub). Forwards messages to POST /api/message when configured.",
+  "author": "Akasha",
+  "category": "channels",
+  "tags": ["matrix", "channel", "messaging", "federation"],
+  "icon": "message-square",
+  "featured": false,
+  "permissions": ["network"],
+  "hook_events": [
+    "on_channel_connect",
+    "on_channel_message",
+    "on_channel_disconnect"
+  ],
+  "trust_level": "stub",
+  "signature_status": "unsigned",
+  "compat_status": "stub-v0.8"
+}

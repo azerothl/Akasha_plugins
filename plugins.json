@@ -1,6 +1,6 @@
 {
   "generated_at": "2026-04-26T14:46:58.506798+00:00",
-  "count": 3,
+  "count": 4,
   "plugins": [
     {
       "id": "graph",
@@ -101,6 +101,35 @@
       "compat_status": "tested-v0.8",
       "path": "plugins/simulation",
       "wasm_sha256": "d3ca10e946a4c3d1a4d4f84cfffd731baf653a452af7dc66507b8746c2603105"
+    },
+    {
+      "id": "matrix-channel",
+      "name": "Matrix Channel",
+      "version": "0.1.0",
+      "description": "Matrix homeserver channel bridge (stub). Forwards messages to POST /api/message when configured.",
+      "author": "Akasha",
+      "category": "channels",
+      "tags": [
+        "matrix",
+        "channel",
+        "messaging",
+        "federation"
+      ],
+      "icon": "message-square",
+      "featured": false,
+      "permissions": [
+        "network"
+      ],
+      "hook_events": [
+        "on_channel_connect",
+        "on_channel_message",
+        "on_channel_disconnect"
+      ],
+      "trust_level": "stub",
+      "signature_status": "unsigned",
+      "compat_status": "stub-v0.8",
+      "path": "matrix-channel",
+      "wasm_sha256": "ad4d8cac864e52bb706a006c697d275a01dde73738532f4574b4c14dd1d4be57"
     }
   ]
 }
