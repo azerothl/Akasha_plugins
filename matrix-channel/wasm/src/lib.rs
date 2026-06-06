@@ -1,4 +1,5 @@
 //! Matrix channel plugin stub — registers channel lifecycle hooks for the host.
+//! Matrix sync/send bridge is intentionally deferred for Wave 6 hardening.
 
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -30,9 +31,7 @@ fn handle(input: &str) -> String {
         "register_channel_hooks" | "on_channel_connect" => {
             "Matrix channel stub: hooks registered. Configure MATRIX_HOMESERVER_URL and vault matrix_access_token before full sync.".to_string()
         }
-        "on_channel_message" => {
-            "Matrix channel stub: message hook acknowledged (host should POST /api/message when bridge is complete).".to_string()
-        }
+        "on_channel_message" => "Matrix channel: message hook acknowledged. Run akasha-matrix-sidecar (MATRIX_HOMESERVER_URL + MATRIX_ACCESS_TOKEN) to sync and POST /api/message.".to_string(),
         "on_channel_disconnect" => {
             "Matrix channel stub: disconnect hook acknowledged.".to_string()
         }

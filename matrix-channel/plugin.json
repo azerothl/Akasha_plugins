@@ -2,7 +2,7 @@
   "id": "matrix-channel",
   "name": "Matrix Channel",
   "version": "0.1.0",
-  "description": "Matrix homeserver channel bridge (stub). Forwards messages to POST /api/message when configured.",
+  "description": "Matrix homeserver channel bridge. WASM hooks + sidecar sync to POST /api/message when configured.",
   "author": "Akasha",
   "category": "channels",
   "tags": ["matrix", "channel", "messaging", "federation"],
@@ -14,7 +14,7 @@
     "on_channel_message",
     "on_channel_disconnect"
   ],
-  "trust_level": "stub",
+  "trust_level": "beta",
   "signature_status": "unsigned",
-  "compat_status": "stub-v0.8"
+  "compat_status": "sidecar-v0.8"
 }

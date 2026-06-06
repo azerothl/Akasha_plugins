@@ -3,7 +3,7 @@ name = "Matrix Channel"
 version = "0.1.0"
 kind = "channel"
 wasm_path = "plugin.wasm"
-description = "Matrix homeserver channel bridge (stub — registers channel hooks)"
+description = "Matrix homeserver channel bridge (WASM hooks + sidecar sync → POST /api/message)"
 permissions = ["network"]
 
 [network]
