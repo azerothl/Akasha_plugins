@@ -1,0 +1,18 @@
+{
+  "id": "caldav-channel",
+  "name": "CalDAV Channel",
+  "version": "0.1.0",
+  "description": "CalDAV calendar sync. WASM hooks + sidecar pull/push toward Akasha calendar API.",
+  "author": "Akasha",
+  "category": "channels",
+  "tags": ["caldav", "calendar", "ics", "sync"],
+  "icon": "calendar",
+  "featured": false,
+  "permissions": ["network"],
+  "hook_events": [
+    "on_schedule_fire"
+  ],
+  "trust_level": "beta",
+  "signature_status": "unsigned",
+  "compat_status": "sidecar-v0.8"
+}
