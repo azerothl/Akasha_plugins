@@ -1,7 +1,7 @@
 //! CalDAV sidecar — pull sync + outbox push toward Akasha daemon.
 
 use base64::Engine;
-use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, TimeZone, Utc};
+use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, Utc};
 use reqwest::{blocking::Client, Url};
 use serde_json::{json, Value};
 use std::env;
@@ -154,12 +154,12 @@ fn parse_ical_datetime(value: &str) -> Option<DateTime<Utc>> {
         return Some(dt.with_timezone(&Utc));
     }
     if let Ok(dt) = NaiveDateTime::parse_from_str(value, "%Y%m%dT%H%M%S") {
-        return Some(Utc.from_utc_datetime(&dt));
+        return Some(dt.and_utc());
     }
     NaiveDate::parse_from_str(value, "%Y%m%d")
         .ok()
         .and_then(|date| date.and_hms_opt(0, 0, 0))
-        .map(|dt| Utc.from_utc_datetime(&dt))
+        .map(|dt| dt.and_utc())
 }
 
 fn parse_ics(ics: &str) -> Result<Vec<ParsedEvent>, String> {
