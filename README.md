@@ -102,7 +102,7 @@ These plugins expose `entry_tools` and `ui_views`. Tauri renders rich views; TUI
 - `caldav-channel` — sync CalDAV ↔ calendrier Akasha (`on_schedule_fire` + sidecar `akasha-caldav-sidecar`)
 - `matrix-channel` — messages Matrix → `POST /api/message` (hooks canal + sidecar `akasha-matrix-sidecar`)
 
-Channel plugins use **WASM for catalogue/hooks** and a **sidecar** for the sync réseau. See each plugin `README.md` for env vars and limitations.
+Channel plugins use **WASM for catalogue/hooks** (via `hook_events` in `plugin.json`) and a **sidecar** for the sync réseau. See each plugin `README.md` for env vars and limitations.
 
 ---
 
