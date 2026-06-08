@@ -9,8 +9,10 @@ Each plugin folder must include:
 - `manifest.toml`
 - `plugin.wasm`
 
-Current folders (`maps`, `graph`, `simulation`) already include manifests and contracts.
+Current folders (`maps`, `graph`, `simulation`, `caldav-channel`, `matrix-channel`) already include manifests and contracts.
 You only need to produce `plugin.wasm` for each plugin implementation.
+
+Channel plugins (`caldav-channel`, `matrix-channel`) also require their **sidecar** binary running beside the daemon — see each plugin `README.md`.
 
 Examples:
 

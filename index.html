@@ -17,7 +17,7 @@
 </head>
 <body>
   <h1>Akasha Plugins</h1>
-  <p class="muted">High-level tool plugins for Akasha agents (maps, graph, simulation, ...)</p>
+  <p class="muted">Agent tools (maps, graph, simulation) and channel bridges (Matrix, CalDAV) for Akasha</p>
   <p id="meta" class="muted"></p>
   <div id="grid" class="grid"></div>
 
@@ -37,7 +37,7 @@
             <p>${p.description || ''}</p>
             <p class="muted">id: <code>${p.id}</code></p>
             <p class="muted">category: ${p.category || 'n/a'}</p>
-            <p class="muted">entry tools: ${(p.entry_tools || []).join(', ')}</p>
+            <p class="muted">${(p.entry_tools || []).length ? 'entry tools: ' + p.entry_tools.join(', ') : (p.hook_events || []).length ? 'hooks: ' + p.hook_events.join(', ') : 'entry tools: —'}</p>
             <div class="tags">${(p.tags || []).map(t => `<span class="tag">${t}</span>`).join('')}</div>
           `;
           grid.appendChild(card);

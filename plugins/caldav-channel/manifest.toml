@@ -1,0 +1,13 @@
+id = "caldav-channel"
+name = "CalDAV Channel"
+version = "0.1.0"
+kind = "channel"
+wasm_path = "plugin.wasm"
+description = "Sync agenda CalDAV externe ↔ calendrier Akasha (sidecar pull/outbox)"
+permissions = ["network"]
+
+[network]
+allowed_url_prefixes = ["https://", "http://127.0.0.1"]
+https_only = false
+max_requests_per_run = 8
+timeout_ms = 30000
