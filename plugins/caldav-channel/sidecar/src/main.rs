@@ -430,8 +430,18 @@ fn process_outbox(
                     let uid = p
                         .get("uid")
                         .and_then(|v| v.as_str())
-                        .unwrap_or("akasha-event");
-                    let summary = p.get("summary").and_then(|v| v.as_str()).unwrap_or("Event");
+                        .unwrap_or("akasha-event")
+                        .replace('\r', "")
+                        .replace('\n', "")
+                        .replace('/', "_")
+                        .replace('\\', "_");
+                    let summary_raw = p.get("summary").and_then(|v| v.as_str()).unwrap_or("Event");
+                    let summary = summary_raw
+                        .replace('\\', r"\\")
+                        .replace(';', r"\;")
+                        .replace(',', r"\,")
+                        .replace('\r', " ")
+                        .replace('\n', " ");
                     let dtstart = format_ical_datetime(
                         p.get("dtstart").and_then(|v| v.as_str()).unwrap_or(""),
                     );
