@@ -2,7 +2,7 @@
 
 ## Today
 
-- Each plugin ships **`plugin.json`** + **`manifest.toml`** with **`permissions`** and **`entry_tools`** (see root `README.md`).
+- Each plugin ships **`plugin.json`** + **`manifest.toml`** with **`permissions`** and either **`entry_tools`** (agent tool plugins) or **`hook_events`** (channel plugins) (see root `README.md`).
 - Akasha daemon exposes **`GET /api/plugins/metrics`** for load/reload health.
 
 ## Roadmap (trust product)

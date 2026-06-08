@@ -39,6 +39,27 @@ fn normalize_url(base: &str, path: &str) -> String {
         return base.trim_end_matches('/').to_string();
     }
     if let Ok(url) = Url::parse(path) {
+        if let Ok(base_url) = Url::parse(base) {
+            let same_origin = url.scheme() == base_url.scheme()
+                && url.host_str() == base_url.host_str()
+                && url.port_or_known_default() == base_url.port_or_known_default();
+            if same_origin {
+                return url.to_string();
+            }
+            let mut target = url.path().to_string();
+            if let Some(query) = url.query() {
+                target.push('?');
+                target.push_str(query);
+            }
+            if let Some(fragment) = url.fragment() {
+                target.push('#');
+                target.push_str(fragment);
+            }
+            return base_url
+                .join(&target)
+                .map(|joined| joined.to_string())
+                .unwrap_or_else(|_| url.to_string());
+        }
         return url.to_string();
     }
     Url::parse(base)
@@ -620,6 +641,14 @@ mod tests {
         assert_eq!(
             normalize_url("https://example.com/dav/root/", "/principals/user/"),
             "https://example.com/principals/user/"
+        );
+    }
+
+    #[test]
+    fn normalize_url_rewrites_cross_origin_absolute_url_to_base() {
+        assert_eq!(
+            normalize_url("https://example.com/dav/root/", "https://evil.example.org/steal.ics"),
+            "https://example.com/steal.ics"
         );
     }
 

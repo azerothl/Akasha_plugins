@@ -39,8 +39,17 @@ def main() -> None:
     for plugin_json in iter_plugin_json_files():
         items.append(load_plugin_json(plugin_json))
 
+    previous_generated_at: str | None = None
+    if OUT_FILE.is_file():
+        try:
+            previous = json.loads(OUT_FILE.read_text(encoding="utf-8"))
+            if previous.get("plugins") == items:
+                previous_generated_at = previous.get("generated_at")
+        except json.JSONDecodeError:
+            previous_generated_at = None
+
     output = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": previous_generated_at or datetime.now(timezone.utc).isoformat(),
         "count": len(items),
         "plugins": items,
     }

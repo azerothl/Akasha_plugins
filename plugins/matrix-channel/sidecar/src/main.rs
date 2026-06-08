@@ -166,14 +166,19 @@ fn main() {
             }
         };
 
-        if let Some(next) = body.get("next_batch").and_then(Value::as_str) {
-            since = Some(next.to_string());
-        }
+        let next_batch = body
+            .get("next_batch")
+            .and_then(Value::as_str)
+            .map(|next| next.to_string());
 
         if initial_sync {
+            if let Some(next) = next_batch {
+                since = Some(next);
+            }
             continue;
         }
 
+        let mut delivered = true;
         for message_data in extract_messages(&body, room_filter.as_deref()) {
             let room_id = &message_data.room_id;
             let sender = &message_data.sender;
@@ -198,11 +203,24 @@ fn main() {
                 }
                 Ok(r) => {
                     eprintln!("akasha POST /api/message HTTP {}", r.status());
+                    delivered = false;
+                    break;
                 }
                 Err(e) => {
                     eprintln!("akasha POST /api/message failed: {e}");
+                    delivered = false;
+                    break;
                 }
             }
+        }
+
+        if delivered {
+            if let Some(next) = next_batch {
+                since = Some(next);
+            }
+        } else {
+            eprintln!("delivery failed; retaining since token to replay events");
+            thread::sleep(Duration::from_secs(2));
         }
     }
 }

@@ -22,6 +22,8 @@ jobs:
           python-version: "3.x"
       - name: Build plugins.json
         run: python3 scripts/build_plugins.py
+      - name: Ensure catalog is up to date
+        run: git diff --exit-code plugins.json
       - name: Validate catalog
         run: |
           python3 << 'PY'
@@ -31,7 +33,7 @@ jobs:
           plugins = data.get("plugins") or []
           if not isinstance(plugins, list) or not plugins:
               sys.exit("plugins.json: missing or empty plugins array")
-          semver = re.compile(r"^\d+\.\d+\.\d+")
+          semver = re.compile(r"^\d+\.\d+\.\d+$")
           sha_re = re.compile(r"^[a-f0-9]{64}$")
           for i, p in enumerate(plugins):
               if not isinstance(p, dict):
