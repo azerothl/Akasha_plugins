@@ -88,8 +88,7 @@
         "table",
         "summary"
       ],
-      "path": "plugins/maps",
-      "wasm_sha256": "c5f3b3a765a1a7ffa04da118c9565b53365a158a976c1a6a5e795f20cb9deac6"
+      "path": "plugins/maps"
     },
     {
       "id": "matrix-channel",
