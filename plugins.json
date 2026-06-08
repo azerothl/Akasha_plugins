@@ -54,8 +54,7 @@
         "table",
         "summary"
       ],
-      "path": "plugins/graph",
-      "wasm_sha256": "0730e8a5bcc8f360b91619bc118d71a9c7cb302a33ccc66509906ae98a591d1a"
+      "path": "plugins/graph"
     },
     {
       "id": "maps",
