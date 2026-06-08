@@ -1,7 +1,33 @@
 {
-  "generated_at": "2026-04-26T14:46:58.506798+00:00",
-  "count": 3,
+  "generated_at": "2026-06-08T12:53:23.917332+00:00",
+  "count": 5,
   "plugins": [
+    {
+      "id": "caldav-channel",
+      "name": "CalDAV Channel",
+      "version": "0.1.0",
+      "description": "Synchronise un agenda CalDAV externe (Nextcloud, Radicale, etc.) avec le calendrier Akasha : import des événements et export des modifications via sidecar.",
+      "author": "Akasha",
+      "category": "channels",
+      "tags": [
+        "caldav",
+        "calendar",
+        "ics",
+        "sync"
+      ],
+      "icon": "calendar",
+      "featured": false,
+      "permissions": [
+        "network"
+      ],
+      "hook_events": [
+        "on_schedule_fire"
+      ],
+      "trust_level": "beta",
+      "signature_status": "unsigned",
+      "compat_status": "sidecar-v0.8",
+      "path": "plugins/caldav-channel"
+    },
     {
       "id": "graph",
       "name": "Graph Tool",
@@ -28,11 +54,7 @@
         "table",
         "summary"
       ],
-      "trust_level": "verified",
-      "signature_status": "sha256-published",
-      "compat_status": "tested-v0.8",
-      "path": "plugins/graph",
-      "wasm_sha256": "0730e8a5bcc8f360b91619bc118d71a9c7cb302a33ccc66509906ae98a591d1a"
+      "path": "plugins/graph"
     },
     {
       "id": "maps",
@@ -65,11 +87,35 @@
         "table",
         "summary"
       ],
-      "trust_level": "verified",
-      "signature_status": "sha256-published",
-      "compat_status": "tested-v0.8",
-      "path": "plugins/maps",
-      "wasm_sha256": "c5f3b3a765a1a7ffa04da118c9565b53365a158a976c1a6a5e795f20cb9deac6"
+      "path": "plugins/maps"
+    },
+    {
+      "id": "matrix-channel",
+      "name": "Matrix Channel",
+      "version": "0.1.0",
+      "description": "Reçoit les messages Matrix (salons fédérés) et les injecte dans les sessions Akasha via sidecar — piloter l'agent depuis Element ou un client Matrix.",
+      "author": "Akasha",
+      "category": "channels",
+      "tags": [
+        "matrix",
+        "channel",
+        "messaging",
+        "federation"
+      ],
+      "icon": "message-square",
+      "featured": false,
+      "permissions": [
+        "network"
+      ],
+      "hook_events": [
+        "on_channel_connect",
+        "on_channel_message",
+        "on_channel_disconnect"
+      ],
+      "trust_level": "beta",
+      "signature_status": "unsigned",
+      "compat_status": "sidecar-v0.8",
+      "path": "plugins/matrix-channel"
     },
     {
       "id": "simulation",
@@ -96,11 +142,7 @@
         "table",
         "summary"
       ],
-      "trust_level": "verified",
-      "signature_status": "sha256-published",
-      "compat_status": "tested-v0.8",
-      "path": "plugins/simulation",
-      "wasm_sha256": "d3ca10e946a4c3d1a4d4f84cfffd731baf653a452af7dc66507b8746c2603105"
+      "path": "plugins/simulation"
     }
   ]
 }

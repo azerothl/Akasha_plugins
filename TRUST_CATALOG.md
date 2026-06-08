@@ -9,7 +9,7 @@
 
 | Item | Intent |
 |------|--------|
-| **SHA256 / signature** | `scripts/build_plugins.py` now embeds **`wasm_sha256`** in `plugins.json` when `plugins/<id>/plugin.wasm` exists (run after WASM build). Optional minisign/sigstore attestation later. |
+| **SHA256 / signature** | `scripts/build_plugins.py` now embeds **`wasm_sha256`** in `plugins.json` when a repository plugin folder contains `plugin.wasm` (run after WASM build). Optional minisign/sigstore attestation later. |
 | **Trust metadata** | Maintainer, review status, last security review date in `plugins.json`. |
 | **MCP bridges** | Document which WASM tools wrap or delegate to MCP servers (`docs/mcp-runtime.md` in core). |
 | **Hooks** | Align with daemon `lifecycle_hooks.json` + gateway HTTP hooks (`docs/gateway-shell-hooks.md` in core). |
