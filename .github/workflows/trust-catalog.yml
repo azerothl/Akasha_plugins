@@ -1,0 +1,62 @@
+name: Trust catalog checks
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "plugins/**/plugin.json"
+      - "plugins.json"
+      - ".github/workflows/trust-catalog.yml"
+  push:
+    branches: [main]
+    paths:
+      - "plugins/**/plugin.json"
+      - "plugins.json"
+
+jobs:
+  trust-catalog:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Validate plugin trust metadata
+        run: |
+          python3 << 'PY'
+          import json, pathlib, re, sys
+
+          plugin_files = list(pathlib.Path("plugins").glob("*/plugin.json"))
+          sha_re = re.compile(r"^[a-f0-9]{64}$")
+          placeholder_re = re.compile(r"^(TBD|TODO|PLACEHOLDER)$", re.I)
+          KNOWN_HOOK_EVENTS = {
+              "on_channel_connect",
+              "on_channel_message",
+              "on_channel_disconnect",
+              "on_schedule_fire",
+              "task_completed",
+              "task_failed",
+          }
+
+          if not plugin_files:
+            sys.exit("No plugin.json files found.")
+
+          for p in plugin_files:
+            data = json.loads(p.read_text(encoding="utf-8"))
+            hooks = data.get("hook_events")
+            category = str(data.get("category", "") or "").strip().lower()
+            if category == "channels":
+              if not isinstance(hooks, list) or not hooks:
+                sys.exit(f"{p}: channel plugins must declare a non-empty hook_events array")
+            if hooks is not None:
+              if not isinstance(hooks, list) or any((not isinstance(x, str) or not x.strip()) for x in hooks):
+                sys.exit(f"{p}: hook_events must be an array of non-empty strings")
+              unknown = [x for x in hooks if x.strip() not in KNOWN_HOOK_EVENTS]
+              if unknown:
+                sys.exit(f"{p}: unknown hook_events {unknown}; allowed: {sorted(KNOWN_HOOK_EVENTS)}")
+            wasm_hash = str(data.get("wasm_sha256", "") or "").strip()
+            if wasm_hash and not (sha_re.match(wasm_hash.lower()) or placeholder_re.match(wasm_hash)):
+              sys.exit(f"{p}: wasm_sha256 must be 64 hex chars or placeholder (TBD/TODO/PLACEHOLDER)")
+
+          print(f"OK: validated {len(plugin_files)} plugin manifests.")
+          PY
