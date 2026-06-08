@@ -142,8 +142,7 @@
         "table",
         "summary"
       ],
-      "path": "plugins/simulation",
-      "wasm_sha256": "d3ca10e946a4c3d1a4d4f84cfffd731baf653a452af7dc66507b8746c2603105"
+      "path": "plugins/simulation"
     }
   ]
 }
