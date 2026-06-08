@@ -1,7 +1,8 @@
 //! CalDAV sidecar — pull sync + outbox push toward Akasha daemon.
 
 use base64::Engine;
-use chrono::{DateTime, Duration, NaiveDate, NaiveDateTime, Utc};
+use chrono::{DateTime, Duration, LocalResult, NaiveDate, NaiveDateTime, TimeZone, Utc};
+use chrono_tz::Tz;
 use reqwest::{blocking::Client, Url};
 use serde_json::{json, Value};
 use std::env;
@@ -25,14 +26,6 @@ fn env_or(key: &str, default: &str) -> String {
         .map(|s| s.trim().to_string())
         .filter(|s| !s.is_empty())
         .unwrap_or_else(|| default.to_string())
-}
-
-fn truthy(key: &str) -> bool {
-    env::var(key)
-        .ok()
-        .as_deref()
-        .map(|s| matches!(s, "1" | "true" | "yes" | "on" | "TRUE" | "YES" | "ON"))
-        .unwrap_or(false)
 }
 
 fn basic_auth_header(user: &str, pass: &str) -> String {
@@ -142,7 +135,7 @@ fn unfold_ical_lines(ics: &str) -> Vec<String> {
     lines
 }
 
-fn parse_ical_datetime(value: &str) -> Option<DateTime<Utc>> {
+fn parse_ical_datetime(value: &str, tzid: Option<&str>) -> Option<DateTime<Utc>> {
     let value = value.trim();
     if value.is_empty() {
         return None;
@@ -154,12 +147,37 @@ fn parse_ical_datetime(value: &str) -> Option<DateTime<Utc>> {
         return Some(dt.with_timezone(&Utc));
     }
     if let Ok(dt) = NaiveDateTime::parse_from_str(value, "%Y%m%dT%H%M%S") {
+        if let Some(tz) = tzid.and_then(parse_tzid) {
+            return match tz.from_local_datetime(&dt) {
+                LocalResult::Single(local) => Some(local.with_timezone(&Utc)),
+                LocalResult::Ambiguous(first, second) => {
+                    Some(std::cmp::min(first, second).with_timezone(&Utc))
+                }
+                LocalResult::None => Some(dt.and_utc()),
+            };
+        }
         return Some(dt.and_utc());
     }
     NaiveDate::parse_from_str(value, "%Y%m%d")
         .ok()
         .and_then(|date| date.and_hms_opt(0, 0, 0))
         .map(|dt| dt.and_utc())
+}
+
+fn parse_tzid(tzid: &str) -> Option<Tz> {
+    let cleaned = tzid.trim().trim_matches('"');
+    cleaned.parse::<Tz>().ok()
+}
+
+fn extract_tzid(name: &str) -> Option<&str> {
+    name.split(';').find_map(|part| {
+        let (key, value) = part.split_once('=')?;
+        if key.eq_ignore_ascii_case("TZID") {
+            Some(value.trim())
+        } else {
+            None
+        }
+    })
 }
 
 fn parse_ics(ics: &str) -> Result<Vec<ParsedEvent>, String> {
@@ -186,13 +204,14 @@ fn parse_ics(ics: &str) -> Result<Vec<ParsedEvent>, String> {
             continue;
         };
         let field = name.split(';').next().unwrap_or(name);
+        let tzid = extract_tzid(name);
         match field {
             "UID" => event.uid = value.trim().to_string(),
             "SUMMARY" => event.summary = value.trim().to_string(),
             "DESCRIPTION" => event.description = value.trim().to_string(),
             "LOCATION" => event.location = value.trim().to_string(),
-            "DTSTART" => event.dtstart = parse_ical_datetime(value),
-            "DTEND" => event.dtend = parse_ical_datetime(value),
+            "DTSTART" => event.dtstart = parse_ical_datetime(value, tzid),
+            "DTEND" => event.dtend = parse_ical_datetime(value, tzid),
             "RRULE" => event.rrule = Some(value.trim().to_string()),
             _ => {}
         }
@@ -551,10 +570,8 @@ fn sync_once(
 }
 
 fn main() {
-    if !truthy("CALDAV_SIDECAR_ENABLED") && env::var("CALDAV_URL").is_err() {
-        eprintln!(
-            "akasha-caldav-sidecar: set CALDAV_URL + credentials or CALDAV_SIDECAR_ENABLED=1"
-        );
+    if env::var("CALDAV_URL").is_err() {
+        eprintln!("akasha-caldav-sidecar: set CALDAV_URL + credentials");
         std::process::exit(1);
     }
     let caldav_url = env_or("CALDAV_URL", "");
@@ -596,7 +613,7 @@ fn main() {
 
 #[cfg(test)]
 mod tests {
-    use super::{extract_xml_blocks, format_ical_datetime, normalize_url};
+    use super::{extract_xml_blocks, format_ical_datetime, normalize_url, parse_ics};
 
     #[test]
     fn normalize_url_resolves_absolute_paths() {
@@ -631,5 +648,22 @@ END:VCALENDAR</C:calendar-data></D:response>
             "20260608T100000Z"
         );
         assert_eq!(format_ical_datetime("20260608T100000Z"), "20260608T100000Z");
+    }
+
+    #[test]
+    fn parse_ics_converts_tzid_local_time_to_utc() {
+        let ics = r#"BEGIN:VCALENDAR
+BEGIN:VEVENT
+UID:evt-1
+DTSTART;TZID=America/New_York:20260608T090000
+DTEND;TZID=America/New_York:20260608T100000
+END:VEVENT
+END:VCALENDAR"#;
+        let events = parse_ics(ics).expect("events");
+        assert_eq!(events.len(), 1);
+        let dtstart = events[0].dtstart.expect("dtstart");
+        let dtend = events[0].dtend.expect("dtend");
+        assert_eq!(dtstart.to_rfc3339(), "2026-06-08T13:00:00+00:00");
+        assert_eq!(dtend.to_rfc3339(), "2026-06-08T14:00:00+00:00");
     }
 }

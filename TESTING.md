@@ -7,7 +7,7 @@ This repository stores plugin packages and contracts.
 Each plugin folder must include:
 
 - `manifest.toml`
-- `plugin.wasm`
+- `plugin.wasm` (build artifact generated locally; not tracked in git)
 
 Current folders (`maps`, `graph`, `simulation`, `caldav-channel`, `matrix-channel`) already include manifests and contracts.
 You only need to produce `plugin.wasm` for each plugin implementation.

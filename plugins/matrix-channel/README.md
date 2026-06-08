@@ -41,8 +41,6 @@ Le **sidecar** est le chemin runtime recommandé. Le WASM déclare le contrat ca
 | `AKASHA_DAEMON_URL` | non | Défaut `http://127.0.0.1:3876` |
 | `MATRIX_ROOM_ID` | non | Filtrer un seul salon (ex. `!abc:matrix.org`) — sinon tous les salons rejoints |
 | `MATRIX_SYNC_TIMEOUT_MS` | non | Timeout long-poll sync (défaut `30000`) |
-| `MATRIX_SIDECAR_ENABLED` | non | `1` pour lancer sans vérifier `MATRIX_HOMESERVER_URL` au démarrage |
-
 Secret vault attendu côté host : `matrix_access_token` (injecté en `MATRIX_ACCESS_TOKEN` au lancement du sidecar).
 
 ## Build WASM (catalogue)

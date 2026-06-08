@@ -50,8 +50,6 @@ Le sidecar est **obligatoire** pour une sync fonctionnelle. Le WASM seul ne cont
 | `CALDAV_ACCOUNT_ID` | non | UUID du compte calendrier Akasha — défaut `00000000-0000-4000-8000-000000000001` |
 | `AKASHA_CALENDAR_SYNC_TOKEN` | non | Jeton partagé envoyé en en-tête `X-Akasha-Calendar-Token` |
 | `CALDAV_SYNC_INTERVAL_SECS` | non | Intervalle entre deux syncs (défaut `300`) |
-| `CALDAV_SIDECAR_ENABLED` | non | `1` pour lancer sans vérifier `CALDAV_URL` au démarrage |
-
 Secrets vault côté host : `caldav_username`, `caldav_password` (injectés en `CALDAV_USERNAME` / `CALDAV_PASSWORD` au lancement du sidecar).
 
 ## Build WASM (catalogue)
