@@ -5,16 +5,12 @@ on:
     branches: [main]
     paths:
       - "plugins/**/plugin.json"
-      - "matrix-channel/plugin.json"
-      - "caldav-channel/plugin.json"
       - "plugins.json"
       - ".github/workflows/trust-catalog.yml"
   push:
     branches: [main]
     paths:
       - "plugins/**/plugin.json"
-      - "matrix-channel/plugin.json"
-      - "caldav-channel/plugin.json"
       - "plugins.json"
 
 jobs:
@@ -31,11 +27,6 @@ jobs:
           import json, pathlib, re, sys
 
           plugin_files = list(pathlib.Path("plugins").glob("*/plugin.json"))
-          plugin_files.extend(
-              path
-              for path in pathlib.Path(".").glob("*/plugin.json")
-              if path.parent.name != "plugins"
-          )
           sha_re = re.compile(r"^[a-f0-9]{64}$")
           placeholder_re = re.compile(r"^(TBD|TODO|PLACEHOLDER)$", re.I)
           KNOWN_HOOK_EVENTS = {

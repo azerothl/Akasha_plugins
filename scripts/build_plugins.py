@@ -14,11 +14,7 @@ OUT_FILE = ROOT / "plugins.json"
 
 
 def iter_plugin_json_files() -> list[Path]:
-    files = {
-        *PLUGINS_DIR.glob("*/plugin.json"),
-        *ROOT.glob("*/plugin.json"),
-    }
-    return sorted(files)
+    return sorted(PLUGINS_DIR.glob("*/plugin.json"))
 
 
 def load_plugin_json(path: Path) -> dict:
