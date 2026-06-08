@@ -116,8 +116,7 @@
       "trust_level": "beta",
       "signature_status": "unsigned",
       "compat_status": "sidecar-v0.8",
-      "path": "plugins/matrix-channel",
-      "wasm_sha256": "ad4d8cac864e52bb706a006c697d275a01dde73738532f4574b4c14dd1d4be57"
+      "path": "plugins/matrix-channel"
     },
     {
       "id": "simulation",
