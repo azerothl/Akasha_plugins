@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build plugins.json from plugins/*/plugin.json files."""
+"""Build plugins.json from repository plugin.json files."""
 
 from __future__ import annotations
 
@@ -11,6 +11,10 @@ from datetime import datetime, timezone
 ROOT = Path(__file__).resolve().parents[1]
 PLUGINS_DIR = ROOT / "plugins"
 OUT_FILE = ROOT / "plugins.json"
+
+
+def iter_plugin_json_files() -> list[Path]:
+    return sorted(PLUGINS_DIR.glob("*/plugin.json"))
 
 
 def load_plugin_json(path: Path) -> dict:
@@ -32,7 +36,7 @@ def load_plugin_json(path: Path) -> dict:
 
 def main() -> None:
     items: list[dict] = []
-    for plugin_json in sorted(PLUGINS_DIR.glob("*/plugin.json")):
+    for plugin_json in iter_plugin_json_files():
         items.append(load_plugin_json(plugin_json))
 
     output = {

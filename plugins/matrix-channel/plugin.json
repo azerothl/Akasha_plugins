@@ -1,0 +1,20 @@
+{
+  "id": "matrix-channel",
+  "name": "Matrix Channel",
+  "version": "0.1.0",
+  "description": "Reçoit les messages Matrix (salons fédérés) et les injecte dans les sessions Akasha via sidecar — piloter l'agent depuis Element ou un client Matrix.",
+  "author": "Akasha",
+  "category": "channels",
+  "tags": ["matrix", "channel", "messaging", "federation"],
+  "icon": "message-square",
+  "featured": false,
+  "permissions": ["network"],
+  "hook_events": [
+    "on_channel_connect",
+    "on_channel_message",
+    "on_channel_disconnect"
+  ],
+  "trust_level": "beta",
+  "signature_status": "unsigned",
+  "compat_status": "sidecar-v0.8"
+}
