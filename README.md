@@ -105,7 +105,7 @@ All 3 plugins define output contracts that Tauri can render richly and TUI can r
 python scripts/build_plugins.py
 ```
 
-This regenerates `plugins.json` from all `plugins/*/plugin.json`.
+This regenerates `plugins.json` from all repository plugin manifests (`plugins/*/plugin.json` plus top-level plugin folders such as `matrix-channel` and `caldav-channel`).
 
 ## Build first executable plugin (`maps`)
 

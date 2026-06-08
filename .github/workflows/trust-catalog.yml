@@ -6,6 +6,7 @@ on:
     paths:
       - "plugins/**/plugin.json"
       - "matrix-channel/plugin.json"
+      - "caldav-channel/plugin.json"
       - "plugins.json"
       - ".github/workflows/trust-catalog.yml"
   push:
@@ -13,6 +14,7 @@ on:
     paths:
       - "plugins/**/plugin.json"
       - "matrix-channel/plugin.json"
+      - "caldav-channel/plugin.json"
       - "plugins.json"
 
 jobs:
@@ -28,7 +30,12 @@ jobs:
           python3 << 'PY'
           import json, pathlib, re, sys
 
-          roots = [pathlib.Path("plugins"), pathlib.Path("matrix-channel")]
+          plugin_files = list(pathlib.Path("plugins").glob("*/plugin.json"))
+          plugin_files.extend(
+              path
+              for path in pathlib.Path(".").glob("*/plugin.json")
+              if path.parent.name != "plugins"
+          )
           sha_re = re.compile(r"^[a-f0-9]{64}$")
           placeholder_re = re.compile(r"^(TBD|TODO|PLACEHOLDER)$", re.I)
           KNOWN_HOOK_EVENTS = {
@@ -39,11 +46,6 @@ jobs:
               "task_completed",
               "task_failed",
           }
-
-          plugin_files = []
-          for root in roots:
-            if root.exists():
-              plugin_files.extend(root.rglob("plugin.json"))
 
           if not plugin_files:
             sys.exit("No plugin.json files found.")

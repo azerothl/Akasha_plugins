@@ -5,11 +5,15 @@ on:
     branches: [main]
     paths:
       - "plugins/**"
+      - "matrix-channel/**"
+      - "caldav-channel/**"
       - "scripts/build_plugins.py"
   pull_request:
     branches: [main]
     paths:
       - "plugins/**"
+      - "matrix-channel/**"
+      - "caldav-channel/**"
       - "scripts/build_plugins.py"
 
 jobs:
