@@ -2,7 +2,7 @@
   "id": "matrix-channel",
   "name": "Matrix Channel",
   "version": "0.1.0",
-  "description": "Matrix homeserver channel bridge. WASM hooks + sidecar sync to POST /api/message when configured.",
+  "description": "Reçoit les messages Matrix (salons fédérés) et les injecte dans les sessions Akasha via sidecar — piloter l'agent depuis Element ou un client Matrix.",
   "author": "Akasha",
   "category": "channels",
   "tags": ["matrix", "channel", "messaging", "federation"],
