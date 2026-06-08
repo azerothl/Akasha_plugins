@@ -2,7 +2,7 @@
   "id": "caldav-channel",
   "name": "CalDAV Channel",
   "version": "0.1.0",
-  "description": "CalDAV calendar sync. WASM hooks + sidecar pull/push toward Akasha calendar API.",
+  "description": "Synchronise un agenda CalDAV externe (Nextcloud, Radicale, etc.) avec le calendrier Akasha : import des événements et export des modifications via sidecar.",
   "author": "Akasha",
   "category": "channels",
   "tags": ["caldav", "calendar", "ics", "sync"],

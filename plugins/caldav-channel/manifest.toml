@@ -3,7 +3,7 @@ name = "CalDAV Channel"
 version = "0.1.0"
 kind = "channel"
 wasm_path = "plugin.wasm"
-description = "CalDAV calendar sync (WASM hooks + sidecar → POST /api/calendar/external/sync)"
+description = "Sync agenda CalDAV externe ↔ calendrier Akasha (sidecar pull/outbox)"
 permissions = ["network"]
 
 [network]
