@@ -1,0 +1,14 @@
+{
+  "id": "homeassistant",
+  "name": "Home Assistant",
+  "version": "0.1.0",
+  "description": "Read and control Home Assistant entities via REST API (lights, climate, scripts, sensors).",
+  "author": "Akasha",
+  "category": "home",
+  "tags": ["home-assistant", "domotics", "iot", "smart-home", "automation"],
+  "icon": "home",
+  "featured": true,
+  "permissions": ["network"],
+  "entry_tools": ["ha_get_state", "ha_list_entities", "ha_call_service", "ha_run_script"],
+  "ui_views": ["table", "summary"]
+}

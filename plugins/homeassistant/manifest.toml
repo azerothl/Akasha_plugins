@@ -1,0 +1,31 @@
+id = "homeassistant"
+name = "Home Assistant"
+version = "0.1.0"
+kind = "tool"
+wasm_path = "plugin.wasm"
+description = "Control Home Assistant entities (lights, sensors, scripts) via REST API"
+permissions = ["network"]
+
+[network]
+allowed_url_prefixes = [
+  "http://127.0.0.1",
+  "http://localhost",
+  "http://homeassistant",
+  "http://homeassistant.local",
+  "https://",
+  "http://192.168.",
+  "http://10.",
+  "http://172.",
+]
+https_only = false
+max_requests_per_run = 6
+timeout_ms = 15000
+max_response_bytes = 500000
+
+[[routing_rules]]
+intent = "domotics"
+keywords = ["lumière", "lumiere", "chauffage", "capteur", "maison", "domotique", "éteindre", "eteindre", "allumer", "home assistant", "homeassistant"]
+preferred_tools = ["ha_get_state", "ha_call_service", "ha_list_entities", "ha_run_script"]
+forbidden_tools = ["memory_store", "write_file", "create_file"]
+priority = 100
+instruction = "For smart home requests, use ha_list_entities to resolve entity_id if unsure, ha_get_state before actions, then ha_call_service or ha_run_script. Never guess entity names."
